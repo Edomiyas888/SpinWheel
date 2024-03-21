@@ -22,13 +22,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations(
       [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
-  await Firebase.initializeApp(
-      options: const FirebaseOptions(
-    apiKey: "AIzaSyAOjzOtXeYctkzukPtG5dpe3hBLBoLmjnU",
-    projectId: "spin-web-a33fd",
-    messagingSenderId: "112722772582",
-    appId: "1:112722772582:web:07ea9a2dbad0308afb23a7",
-  ));
+
   runApp(
     MaterialApp(
       debugShowCheckedModeBanner: false,
