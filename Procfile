@@ -1,1 +1,1 @@
-web: flutter run -d web-server --release --no-sound-null-safety
+web: flutter build web && cd build/web && python -m http.server $PORT
