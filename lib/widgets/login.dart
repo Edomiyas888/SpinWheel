@@ -35,12 +35,12 @@ class _LoginState extends State<Login> {
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            Image.asset(
-              'assets/images/prime_logo.png',
-              width: 150,
-              height: 150,
-              fit: BoxFit.contain,
-            ),
+            // Image.asset(
+            //   'assets/images/prime_logo.png',
+            //   width: 150,
+            //   height: 150,
+            //   fit: BoxFit.contain,
+            // ),
             const Text(
               'Login',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
@@ -65,24 +65,24 @@ class _LoginState extends State<Login> {
                   SizedBox(
                     height: 18,
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('Don\'t have an account? '),
-                      GestureDetector(
-                        child: Text(
-                          'Sign Up',
-                          style: TextStyle(fontWeight: FontWeight.w900),
-                        ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => SignUp()),
-                          );
-                        },
-                      )
-                    ],
-                  )
+                  // Row(
+                  //   mainAxisAlignment: MainAxisAlignment.center,
+                  //   children: [
+                  //     Text('Don\'t have an account? '),
+                  //     GestureDetector(
+                  //       child: Text(
+                  //         'Sign Up',
+                  //         style: TextStyle(fontWeight: FontWeight.w900),
+                  //       ),
+                  //       onTap: () {
+                  //         Navigator.push(
+                  //           context,
+                  //           MaterialPageRoute(builder: (context) => SignUp()),
+                  //         );
+                  //       },
+                  //     )
+                  //   ],
+                  // )
                 ],
               ),
             ),

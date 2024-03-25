@@ -6,18 +6,13 @@ class Constants {
   Constants._();
 
   static Constants I = Constants._();
-
-  static List<Fortune> list8Item = <Fortune>[
+  static List<Fortune> list5Item = <Fortune>[
     Fortune(
         id: 1,
         titleName: '1',
-        backgroundColor: Colors.primaries[0],
+        backgroundColor: const Color.fromARGB(255, 246, 28, 13),
         priority: 10),
-    Fortune(
-        id: 2,
-        titleName: '2',
-        backgroundColor: Colors.primaries[2],
-        priority: 5),
+    Fortune(id: 2, titleName: '2', backgroundColor: Colors.black, priority: 5),
     Fortune(
         id: 3,
         titleName: '3',
@@ -25,13 +20,40 @@ class Constants {
         priority: 2),
     Fortune(id: 4, titleName: '4', backgroundColor: Colors.primaries[6]),
     Fortune(id: 5, titleName: '5', backgroundColor: Colors.primaries[8]),
-    Fortune(id: 6, titleName: '6', backgroundColor: Colors.primaries[10]),
-    Fortune(id: 7, titleName: '7', backgroundColor: Colors.primaries[12]),
-    Fortune(id: 8, titleName: '8', backgroundColor: Colors.primaries[14]),
-    Fortune(id: 9, titleName: '9', backgroundColor: Colors.primaries[1]),
-    Fortune(id: 10, titleName: '10', backgroundColor: Colors.primaries[2]),
-    Fortune(id: 11, titleName: '11', backgroundColor: Colors.primaries[3]),
-    Fortune(id: 12, titleName: '12', backgroundColor: Colors.primaries[4]),
+  ];
+  static List<Fortune> list8Item = <Fortune>[
+    Fortune(
+        id: 1,
+        titleName: '1',
+        backgroundColor: Color.fromARGB(255, 246, 28, 13),
+        priority: 10),
+    Fortune(id: 2, titleName: '2', backgroundColor: Colors.black, priority: 5),
+    Fortune(
+        id: 3,
+        titleName: '3',
+        backgroundColor: Color.fromARGB(255, 246, 28, 13),
+        priority: 2),
+    Fortune(id: 4, titleName: '4', backgroundColor: Colors.black),
+    Fortune(
+        id: 5,
+        titleName: '5',
+        backgroundColor: Color.fromARGB(255, 246, 28, 13)),
+    Fortune(id: 6, titleName: '6', backgroundColor: Colors.black),
+    Fortune(
+        id: 7,
+        titleName: '7',
+        backgroundColor: Color.fromARGB(255, 246, 28, 13)),
+    Fortune(id: 8, titleName: '8', backgroundColor: Colors.black),
+    Fortune(
+        id: 9,
+        titleName: '9',
+        backgroundColor: Color.fromARGB(255, 246, 28, 13)),
+    Fortune(id: 10, titleName: '10', backgroundColor: Colors.black),
+    Fortune(
+        id: 11,
+        titleName: '11',
+        backgroundColor: Color.fromARGB(255, 246, 28, 13)),
+    Fortune(id: 12, titleName: '12', backgroundColor: Colors.black),
   ];
 
   static List<Fortune> list3Item = <Fortune>[
@@ -56,63 +78,117 @@ class Constants {
     Fortune(
         id: 1,
         titleName: '1',
-        backgroundColor: Colors.primaries[0],
+        backgroundColor: Color.fromARGB(255, 246, 28, 13),
         priority: 1),
-    Fortune(
-        id: 2,
-        titleName: '2',
-        backgroundColor: Colors.primaries[2],
-        priority: 1),
+    Fortune(id: 2, titleName: '2', backgroundColor: Colors.black, priority: 1),
     Fortune(
         id: 3,
         titleName: '3',
-        backgroundColor: Colors.primaries[4],
+        backgroundColor: Color.fromARGB(255, 246, 28, 13),
         priority: 1),
-    Fortune(
-        id: 4,
-        titleName: '4',
-        backgroundColor: Colors.primaries[6],
-        priority: 1),
+    Fortune(id: 4, titleName: '4', backgroundColor: Colors.black, priority: 1),
     Fortune(
         id: 5,
         titleName: '5',
-        backgroundColor: Colors.primaries[8],
+        backgroundColor: Color.fromARGB(255, 246, 28, 13),
         priority: 1),
-    Fortune(
-        id: 6,
-        titleName: '6',
-        backgroundColor: Colors.primaries[10],
-        priority: 1),
+    Fortune(id: 6, titleName: '6', backgroundColor: Colors.black, priority: 1),
     Fortune(
         id: 7,
         titleName: '7',
-        backgroundColor: Colors.primaries[12],
+        backgroundColor: Color.fromARGB(255, 246, 28, 13),
         priority: 1),
-    Fortune(
-        id: 8,
-        titleName: '8',
-        backgroundColor: Colors.primaries[14],
-        priority: 1),
+    Fortune(id: 8, titleName: '8', backgroundColor: Colors.black, priority: 1),
     Fortune(
         id: 9,
         titleName: '9',
-        backgroundColor: Colors.primaries[9],
+        backgroundColor: Color.fromARGB(255, 246, 28, 13),
         priority: 1),
     Fortune(
-        id: 10,
-        titleName: '10',
-        backgroundColor: Colors.primaries[1],
-        priority: 1),
+        id: 10, titleName: '10', backgroundColor: Colors.black, priority: 1),
     Fortune(
         id: 11,
         titleName: '11',
-        backgroundColor: Colors.primaries[8],
+        backgroundColor: Color.fromARGB(255, 246, 28, 13),
         priority: 1),
     Fortune(
-        id: 12,
-        titleName: '12',
-        backgroundColor: Colors.primaries[12],
+        id: 12, titleName: '12', backgroundColor: Colors.black, priority: 1),
+    Fortune(
+        id: 1,
+        titleName: '13',
+        backgroundColor: Color.fromARGB(255, 246, 28, 13),
         priority: 1),
+    Fortune(id: 2, titleName: '14', backgroundColor: Colors.black, priority: 1),
+    Fortune(
+        id: 3,
+        titleName: '15',
+        backgroundColor: Color.fromARGB(255, 246, 28, 13),
+        priority: 1),
+    Fortune(id: 4, titleName: '16', backgroundColor: Colors.black, priority: 1),
+    Fortune(
+        id: 5,
+        titleName: '17',
+        backgroundColor: Color.fromARGB(255, 246, 28, 13),
+        priority: 1),
+    Fortune(id: 6, titleName: '18', backgroundColor: Colors.black, priority: 1),
+    Fortune(
+        id: 7,
+        titleName: '19',
+        backgroundColor: Color.fromARGB(255, 246, 28, 13),
+        priority: 1),
+    Fortune(id: 8, titleName: '20', backgroundColor: Colors.black, priority: 1),
+    Fortune(
+        id: 9,
+        titleName: '21',
+        backgroundColor: Color.fromARGB(255, 246, 28, 13),
+        priority: 1),
+    Fortune(
+        id: 10, titleName: '22', backgroundColor: Colors.black, priority: 1),
+    Fortune(
+        id: 11,
+        titleName: '23',
+        backgroundColor: Color.fromARGB(255, 246, 28, 13),
+        priority: 1),
+    Fortune(
+        id: 12, titleName: '24', backgroundColor: Colors.black, priority: 1),
+    Fortune(
+        id: 1,
+        titleName: '25',
+        backgroundColor: Color.fromARGB(255, 246, 28, 13),
+        priority: 1),
+    Fortune(id: 2, titleName: '26', backgroundColor: Colors.black, priority: 1),
+    Fortune(
+        id: 3,
+        titleName: '27',
+        backgroundColor: Color.fromARGB(255, 246, 28, 13),
+        priority: 1),
+    Fortune(id: 4, titleName: '28', backgroundColor: Colors.black, priority: 1),
+    Fortune(
+        id: 5,
+        titleName: '29',
+        backgroundColor: Color.fromARGB(255, 246, 28, 13),
+        priority: 1),
+    Fortune(id: 6, titleName: '30', backgroundColor: Colors.black, priority: 1),
+    Fortune(
+        id: 7,
+        titleName: '31',
+        backgroundColor: Color.fromARGB(255, 246, 28, 13),
+        priority: 1),
+    Fortune(id: 8, titleName: '32', backgroundColor: Colors.black, priority: 1),
+    Fortune(
+        id: 9,
+        titleName: '33',
+        backgroundColor: Color.fromARGB(255, 246, 28, 13),
+        priority: 1),
+    Fortune(
+        id: 10, titleName: '34', backgroundColor: Colors.black, priority: 1),
+    Fortune(
+        id: 11,
+        titleName: '35',
+        backgroundColor: Color.fromARGB(255, 246, 28, 13),
+        priority: 1),
+    Fortune(
+        id: 12, titleName: '36', backgroundColor: Colors.black, priority: 1),
   ];
 
   static List<Fortune> numbers160 = List.generate(

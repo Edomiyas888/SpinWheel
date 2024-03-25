@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_fortune_wheel/flutter_fortune_wheel.dart';
 import 'package:flutter_fortune_wheel_example/common/constants.dart';
 import 'package:flutter_fortune_wheel_example/common/theme.dart';
+import 'package:flutter_fortune_wheel_example/pages/chooseNumber.dart';
 import 'package:flutter_fortune_wheel_example/pages/fortune_wheel_history_page.dart';
 import 'package:flutter_fortune_wheel_example/pages/fortune_wheel_setting_page.dart';
 import 'package:flutter_fortune_wheel_example/widgets/fortune_wheel_background.dart';
@@ -22,7 +23,13 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations(
       [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
-
+  await Firebase.initializeApp(
+      options: const FirebaseOptions(
+    apiKey: "AIzaSyAOjzOtXeYctkzukPtG5dpe3hBLBoLmjnU",
+    projectId: "spin-web-a33fd",
+    messagingSenderId: "112722772582",
+    appId: "1:112722772582:web:07ea9a2dbad0308afb23a7",
+  ));
   runApp(
     MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -65,12 +72,40 @@ class _MyAppState extends State<MyApp> {
   String winningValue = "";
   @override
   double totalPlayers = 0.0;
+  double _awardedPercent = 0;
+  double _awardedPoints = 0;
+  String _userId = "";
+  bool _pointChecker = false;
   void initState() {
     super.initState();
     _totalPlayersController.text = "10";
     _painterController.playAnimation();
     _confettiController =
         ConfettiController(duration: const Duration(seconds: 10));
+    _initializeData(); // Call a new method to ensure everything is properly initialized
+  }
+
+  Future<void> _initializeData() async {
+    await _loadUserId();
+    await _fetchAwardedPercent();
+    await _fetchAwardedPoints();
+    _pointChecker = _awardedPoints <
+        (_wheel.items.length *
+            (double.tryParse(_totalPlayersController.text) ?? 0.0) *
+            _awardedPoints /
+            100);
+
+    setState(() {
+      print(_pointChecker);
+    }); // Trigger rebuild after data is fetched
+  }
+
+  Future<void> _loadUserId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString('userId');
+    setState(() {
+      _userId = userId ?? ''; // Update userRole state variable
+    });
   }
 
   @override
@@ -89,13 +124,22 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    print(winningValue);
+    print("Percent: $_awardedPercent");
+    print(_pointChecker);
+
     return Scaffold(
       backgroundColor: const Color(0xFFC3DBF8),
       body: Stack(
         children: [
+          Image.asset(
+            'assets/images/tablebg.jpg', // Replace 'assets/background_image.jpg' with your image asset path
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+          ),
           FortuneWheelBackground(
             painterController: _painterController,
+            backgroundColor: Colors.black,
             child: Center(
                 child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -284,12 +328,15 @@ class _MyAppState extends State<MyApp> {
                                                       _totalPlayersController
                                                           .text) ??
                                                   0.0) *
-                                              0.2);
+                                              _awardedPercent /
+                                              100);
 
                                       if (snapshot.hasData &&
                                           snapshot.data == true) {
                                         return Text(
-                                          totalPlayers.toString(),
+                                          totalPlayers
+                                              .toStringAsFixed(2)
+                                              .toString(),
                                           style: TextStyle(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 28,
@@ -326,6 +373,38 @@ class _MyAppState extends State<MyApp> {
         ],
       ),
     );
+  }
+
+  Future<void> _fetchAwardedPoints() async {
+    final QuerySnapshot pointsSnapshot = await FirebaseFirestore.instance
+        .collection('points')
+        .where('userId', isEqualTo: _userId)
+        .get();
+    int totalPoints = 0;
+    pointsSnapshot.docs.forEach((DocumentSnapshot doc) {
+      totalPoints += (doc['points'] as int? ?? 0);
+    });
+    print(totalPoints);
+    setState(() {
+      _awardedPoints = totalPoints as double;
+      // Set points in TextField
+    });
+  }
+
+  Future<void> _fetchAwardedPercent() async {
+    final QuerySnapshot pointsSnapshot = await FirebaseFirestore.instance
+        .collection('points')
+        .where('userId', isEqualTo: _userId)
+        .get();
+    int totalPoints = 0;
+    pointsSnapshot.docs.forEach((DocumentSnapshot doc) {
+      totalPoints += (doc['percent'] as int? ?? 0);
+    });
+    print(totalPoints);
+    setState(() {
+      _awardedPercent = totalPoints as double;
+      // Set points in TextField
+    });
   }
 
   Future<void> _showMyDialog() async {
@@ -387,7 +466,10 @@ class _MyAppState extends State<MyApp> {
             IconButton(
               splashRadius: 28,
               onPressed: () {
-                _showMyDialog();
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => CircleButtons(wheel: _wheel)));
               },
               icon: const Icon(Icons.add, color: Colors.white),
             ),
@@ -432,24 +514,31 @@ class _MyAppState extends State<MyApp> {
   }
 
   Widget _buildFortuneWheel() {
-    return Center(
-      child: StreamBuilder<bool>(
-        stream: _fortuneWheelController.stream,
-        builder: (context, snapshot) {
-          if (snapshot.data == false) {
-            return const SizedBox.shrink();
-          }
-          return FortuneWheel(
-            key: const ValueKey<String>('ValueKeyFortunerWheel'),
-            wheel: _wheel,
-            onChanged: (Fortune item) {
-              _resultWheelController.sink.add(item);
-            },
-            onResult: _onResult,
-          );
-        },
-      ),
-    );
+    if (_pointChecker) {
+      return Center(
+        child: StreamBuilder<bool>(
+          stream: _fortuneWheelController.stream,
+          builder: (context, snapshot) {
+            if (snapshot.data == false) {
+              return const SizedBox.shrink();
+            }
+            return FortuneWheel(
+              key: const ValueKey<String>('ValueKeyFortunerWheel'),
+              wheel: _wheel,
+              onChanged: (Fortune item) {
+                _resultWheelController.sink.add(item);
+              },
+              onResult: _onResult,
+            );
+          },
+        ),
+      );
+    } else {
+      return Text(
+        'Oops You are Out of Points !!!!!',
+        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      );
+    }
   }
 
   Future<void> _onResult(Fortune item) async {

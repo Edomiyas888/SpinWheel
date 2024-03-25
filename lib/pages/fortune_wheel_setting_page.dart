@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_fortune_wheel/flutter_fortune_wheel.dart';
 import 'package:flutter_fortune_wheel_example/common/constants.dart';
@@ -8,6 +9,7 @@ import 'package:flutter_fortune_wheel_example/widgets/dropdown.dart';
 import 'package:flutter_fortune_wheel_example/widgets/fortune_item.dart';
 import 'package:flutter_fortune_wheel_example/widgets/fortune_template.dart';
 import 'package:flutter_fortune_wheel_example/widgets/login.dart';
+import 'package:flutter_fortune_wheel_example/widgets/percentDropdown.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 typedef void WheelUpdateCallback(int newLength);
@@ -34,6 +36,8 @@ class _FortuneWheelSettingPageState extends State<FortuneWheelSettingPage> {
   final TextEditingController _titleSpinButtonController =
       TextEditingController();
   String _userRole = '';
+  String _userId = '';
+  int _totalPoints = 0;
 
   @override
   void initState() {
@@ -43,6 +47,13 @@ class _FortuneWheelSettingPageState extends State<FortuneWheelSettingPage> {
     _titleSpinButtonController.text = _wheel.titleSpinButton ?? '';
     _fortuneValuesController = StreamController<bool>.broadcast();
     _loadUserRole();
+    _initializeData();
+  }
+
+  Future<void> _initializeData() async {
+    await _loadUserId();
+    await _fetchAwardedPoints();
+    setState(() {}); // Trigger rebuild after data is fetched
   }
 
   Future<void> _loadUserRole() async {
@@ -50,6 +61,30 @@ class _FortuneWheelSettingPageState extends State<FortuneWheelSettingPage> {
     String? userRole = prefs.getString('userRole');
     setState(() {
       _userRole = userRole ?? ''; // Update userRole state variable
+    });
+  }
+
+  Future<void> _loadUserId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString('userId');
+    setState(() {
+      _userId = userId ?? ''; // Update userRole state variable
+    });
+  }
+
+  Future<void> _fetchAwardedPoints() async {
+    final QuerySnapshot pointsSnapshot = await FirebaseFirestore.instance
+        .collection('points')
+        .where('userId', isEqualTo: _userId)
+        .get();
+    int totalPoints = 0;
+    pointsSnapshot.docs.forEach((DocumentSnapshot doc) {
+      totalPoints += (doc['points'] as int? ??
+          0); // Explicitly cast and handle null values
+    });
+    setState(() {
+      _totalPoints = totalPoints;
+      // Set points in TextField
     });
   }
 
@@ -95,7 +130,7 @@ class _FortuneWheelSettingPageState extends State<FortuneWheelSettingPage> {
   }
 
   Widget _buildBody() {
-    print(_userRole);
+    print(_totalPoints);
     return SafeArea(
       child: SingleChildScrollView(
         child: Padding(
@@ -105,7 +140,7 @@ class _FortuneWheelSettingPageState extends State<FortuneWheelSettingPage> {
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     _buildGameMode(),
-                    Text(
+                    const Text(
                       'Reward Points',
                       style:
                           TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
@@ -113,6 +148,15 @@ class _FortuneWheelSettingPageState extends State<FortuneWheelSettingPage> {
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: UserDropdown(),
+                    ),
+                    const Text(
+                      'Share Percentage',
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: PercentDropdown(),
                     ),
                     _userRole == 'admin' ? _buildDuration() : Container(),
                     _buildEditTitle(),
@@ -130,6 +174,24 @@ class _FortuneWheelSettingPageState extends State<FortuneWheelSettingPage> {
                   children: [
                     _buildGameMode(),
                     _userRole != 'admin' ? _buildDuration() : Container(),
+                    Padding(
+                      padding: const EdgeInsets.all(18.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Remaining Points',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 18),
+                          ),
+                          Text(
+                            _totalPoints.toString(),
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 18),
+                          ),
+                        ],
+                      ),
+                    ),
                     _buildEditTitle(),
                     _buildExpansionFortuneValues(),
                     SizedBox(
@@ -423,51 +485,51 @@ class _FortuneWheelSettingPageState extends State<FortuneWheelSettingPage> {
 
   void _handleGetDefaultTemplate() {
     List<FortuneTemplate> templates = <FortuneTemplate>[
-      FortuneTemplate(
-        title: 'Lì xì năm mới',
-        fortuneValues: Constants.liXiNamMoi,
-        onPressed: () {
-          _wheel = _wheel.copyWith(items: Constants.liXiNamMoi);
-          _fortuneValuesController.sink.add(true);
-          Navigator.pop(context);
-        },
-      ),
-      FortuneTemplate(
-        title: 'Ai sẽ phải uống?',
-        fortuneValues: Constants.actionDrinkBeerList,
-        onPressed: () {
-          _wheel = _wheel.copyWith(items: Constants.actionDrinkBeerList);
-          _fortuneValuesController.sink.add(true);
-          Navigator.pop(context);
-        },
-      ),
-      FortuneTemplate(
-        title: 'Hôm nay ăn gì?',
-        fortuneValues: Constants.todayWhatDoEat,
-        onPressed: () {
-          _wheel = _wheel.copyWith(items: Constants.todayWhatDoEat);
-          _fortuneValuesController.sink.add(true);
-          Navigator.pop(context);
-        },
-      ),
-      FortuneTemplate(
-        title: 'Yes or No?',
-        fortuneValues: Constants.yesOrNo,
-        onPressed: () {
-          _wheel = _wheel.copyWith(items: Constants.yesOrNo);
-          _fortuneValuesController.sink.add(true);
-          Navigator.pop(context);
-        },
-      ),
-      FortuneTemplate(
-        title: 'Yêu hoặc không yêu?',
-        fortuneValues: Constants.loveOrNotLove,
-        onPressed: () {
-          _wheel = _wheel.copyWith(items: Constants.loveOrNotLove);
-          _fortuneValuesController.sink.add(true);
-          Navigator.pop(context);
-        },
-      ),
+      // FortuneTemplate(
+      //   title: 'Lì xì năm mới',
+      //   fortuneValues: Constants.liXiNamMoi,
+      //   onPressed: () {
+      //     _wheel = _wheel.copyWith(items: Constants.liXiNamMoi);
+      //     _fortuneValuesController.sink.add(true);
+      //     Navigator.pop(context);
+      //   },
+      // ),
+      // FortuneTemplate(
+      //   title: 'Ai sẽ phải uống?',
+      //   fortuneValues: Constants.actionDrinkBeerList,
+      //   onPressed: () {
+      //     _wheel = _wheel.copyWith(items: Constants.actionDrinkBeerList);
+      //     _fortuneValuesController.sink.add(true);
+      //     Navigator.pop(context);
+      //   },
+      // ),
+      // FortuneTemplate(
+      //   title: 'Hôm nay ăn gì?',
+      //   fortuneValues: Constants.todayWhatDoEat,
+      //   onPressed: () {
+      //     _wheel = _wheel.copyWith(items: Constants.todayWhatDoEat);
+      //     _fortuneValuesController.sink.add(true);
+      //     Navigator.pop(context);
+      //   },
+      // ),
+      // FortuneTemplate(
+      //   title: 'Yes or No?',
+      //   fortuneValues: Constants.yesOrNo,
+      //   onPressed: () {
+      //     _wheel = _wheel.copyWith(items: Constants.yesOrNo);
+      //     _fortuneValuesController.sink.add(true);
+      //     Navigator.pop(context);
+      //   },
+      // ),
+      // FortuneTemplate(
+      //   title: 'Yêu hoặc không yêu?',
+      //   fortuneValues: Constants.loveOrNotLove,
+      //   onPressed: () {
+      //     _wheel = _wheel.copyWith(items: Constants.loveOrNotLove);
+      //     _fortuneValuesController.sink.add(true);
+      //     Navigator.pop(context);
+      //   },
+      // ),
       FortuneTemplate(
         title: 'Random (1- 12)',
         fortuneValues: Constants.list12Item,
@@ -592,6 +654,7 @@ class _FortuneWheelSettingPageState extends State<FortuneWheelSettingPage> {
       },
     );
   }
+  
 
   void _handleDeleteFortuneItemPressed(int index) {
     Widget cancelButton = TextButton(

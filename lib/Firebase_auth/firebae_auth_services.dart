@@ -53,8 +53,7 @@ class FirebaseAuthServices {
     }
     return null;
   }
-
-  Future<String?> getUserRole(String uid) async {
+ Future<String?> getUserRole(String uid) async {
     try {
       // Reference to the "users" collection
       CollectionReference users =
