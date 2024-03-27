@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_fortune_wheel_example/Firebase_auth/firebae_auth_services.dart';
 import 'package:flutter_fortune_wheel_example/main.dart';
+import 'package:flutter_fortune_wheel_example/pages/adminHomepage.dart';
 import 'package:flutter_fortune_wheel_example/widgets/login.dart';
 
 class SignUp extends StatefulWidget {
@@ -73,22 +74,22 @@ class _SignUpState extends State<SignUp> {
                         hintText: 'Username'), // Placeholder for username
                   ),
                   const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('Already have an account? '),
-                      GestureDetector(
-                        child: const Text(
-                          'Login',
-                          style: TextStyle(fontWeight: FontWeight.w900),
-                        ),
-                        onTap: () {
-                          Navigator.push(context,
-                              MaterialPageRoute(builder: (context) => Login()));
-                        },
-                      )
-                    ],
-                  )
+                  // Row(
+                  //   mainAxisAlignment: MainAxisAlignment.center,
+                  //   children: [
+                  //     Text('Already have an account? '),
+                  //     GestureDetector(
+                  //       child: const Text(
+                  //         'Login',
+                  //         style: TextStyle(fontWeight: FontWeight.w900),
+                  //       ),
+                  //       onTap: () {
+                  //         Navigator.push(context,
+                  //             MaterialPageRoute(builder: (context) => Login()));
+                  //       },
+                  //     )
+                  //   ],
+                  // )
                 ],
               ),
             ),
@@ -123,7 +124,8 @@ class _SignUpState extends State<SignUp> {
         ),
       );
       ScaffoldMessenger.of(context).showSnackBar(snackBar);
-      Navigator.push(context, MaterialPageRoute(builder: (context) => MyApp()));
+      Navigator.push(
+          context, MaterialPageRoute(builder: (context) => Dashboard()));
     }
   }
 
@@ -137,7 +139,7 @@ class _SignUpState extends State<SignUp> {
       await users.doc(uid).set({
         'email': email,
         'username': username,
-        'role': 'admin'
+        'role': 'casher'
         // Add more user data as needed
       });
     } catch (e) {

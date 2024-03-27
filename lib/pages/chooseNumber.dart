@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_fortune_wheel/flutter_fortune_wheel.dart';
-import 'package:flutter_fortune_wheel_example/widgets/fortune_template.dart';
+import 'package:flutter_fortune_wheel_example/widgets/custom_form_fortune_add_edit.dart';
+import 'package:flutter_fortune_wheel_example/widgets/fortune_item.dart';
 
 class CircleButtons extends StatefulWidget {
   const CircleButtons({Key? key, required this.wheel}) : super(key: key);
@@ -14,17 +16,27 @@ class CircleButtons extends StatefulWidget {
 }
 
 class _CircleButtonsState extends State<CircleButtons> {
-  late Wheel _wheel;
+  late Wheel _wheel = Wheel(items: []);
+
   List<bool> _isClicked = List.generate(100, (index) => false);
   late final StreamController<bool> _fortuneValuesController;
+  List<Fortune> selectedNumbers = <Fortune>[];
 
   @override
   void initState() {
     super.initState();
     _fortuneValuesController = StreamController<bool>.broadcast();
 
+    // Select and add items 1 and 2 to the wheel initially
     _wheel = widget.wheel;
-    print(_wheel);
+
+    // Select items based on their title names from the provided Fortune list
+    widget.wheel.items.forEach((fortune) {
+      int titleNumber = int.tryParse(fortune.titleName.toString()) ?? 0;
+      if (titleNumber > 0 && titleNumber <= 100) {
+        _isClicked[titleNumber - 1] = true;
+      }
+    });
   }
 
   @override
@@ -33,13 +45,10 @@ class _CircleButtonsState extends State<CircleButtons> {
     _fortuneValuesController.close();
   }
 
-  List<Fortune> selectedNumbers = <Fortune>[];
-
   @override
   Widget build(BuildContext context) {
     double screenHeight = MediaQuery.of(context).size.height;
-    double buttonSize =
-        screenHeight * 0.05; // Adjust button size based on screen width
+    double buttonSize = screenHeight * 0.05;
 
     return Scaffold(
       body: Padding(
@@ -72,20 +81,35 @@ class _CircleButtonsState extends State<CircleButtons> {
                       return GestureDetector(
                         onTap: () {
                           setState(() {
+                            // Toggle the clicked state
                             _isClicked[index] = !_isClicked[index];
+
+                            // Determine the background color based on the index and clicked state
+                            Color backgroundColor =
+                                _isClicked[index] ? Colors.red : Colors.black;
+
+                            // Apply alternating colors
+                            if (index % 2 == 1) {
+                              backgroundColor =
+                                  _isClicked[index] ? Colors.black : Colors.red;
+                            }
+
+                            // Handle adding or removing items based on click
                             if (_isClicked[index]) {
-                              selectedNumbers.add(
-                                Fortune(
-                                  id: index + 1,
-                                  titleName: '${index + 1}',
-                                  backgroundColor: Colors
-                                      .red, // Adjust the background color as needed
-                                  priority: 10, // Adjust the priority as needed
-                                ),
-                              );
-                            } else {
-                              selectedNumbers.removeWhere(
-                                  (fortune) => fortune.id == index + 1);
+                              _handleInsertItem(
+                                  Fortune(
+                                    id: _wheel.items.length + 1,
+                                    titleName: '${index + 1}',
+                                    backgroundColor: backgroundColor,
+                                    priority: 10,
+                                  ), (fortuneItem) {
+                                {
+                                  setState(() {
+                                    _wheel.items.add(fortuneItem);
+                                    _fortuneValuesController.sink.add(true);
+                                  });
+                                }
+                              });
                             }
                           });
                         },
@@ -112,8 +136,7 @@ class _CircleButtonsState extends State<CircleButtons> {
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
-                                fontSize: buttonSize *
-                                    0.4, // Adjust font size based on button size
+                                fontSize: buttonSize * 0.4,
                               ),
                             ),
                           ),
@@ -124,44 +147,45 @@ class _CircleButtonsState extends State<CircleButtons> {
                 ),
                 SizedBox(height: 16),
                 ElevatedButton(
-                  onPressed: () {
-                    for (int i = 0; i < _isClicked.length; i++) {
-                      if (_isClicked[i]) {
-                        setState(() {
-                          selectedNumbers.add(
-                            Fortune(
-                              id: i + 1,
-                              titleName: '${i + 1}',
-                              backgroundColor: Colors
-                                  .red, // Adjust the background color as needed
-                              priority: 10, // Adjust the priority as needed
-                            ),
-                          );
-                        });
+                  onPressed: () async {
+                    // Check if there are at least 2 selected items before submitting
+                    int selectedCount =
+                        _isClicked.where((clicked) => clicked).length;
+                    if (selectedCount >= 2) {
+                      List<Fortune> selectedItems = [];
+                      for (int i = 0; i < _isClicked.length; i++) {
+                        if (_isClicked[i]) {
+                          // Convert index to 1-based position
+                          selectedItems.add(Fortune(
+                            id: selectedItems.length + 1,
+                            titleName: '${i + 1}',
+                            backgroundColor:
+                                i % 2 == 0 ? Colors.red : Colors.black,
+                            priority: 10,
+                          ));
+                        }
                       }
+
+                      // Stream only the selected items
+                      _fortuneValuesController.sink.add(true);
+
+                      setState(() {
+                        _wheel = Wheel(items: selectedItems);
+                      });
+
+                      print(_wheel);
+                      Navigator.pop(context, _wheel);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Select at least 2 items')),
+                      );
                     }
-                    _wheel = _wheel.copyWith(items: selectedNumbers);
-                    _fortuneValuesController.sink.add(true);
-                    setState(() {
-                      _wheel;
-                    });
-                    // Handle submission logic here
                   },
                   child: Text('Submit'),
-                ),
-                FortuneTemplate(
-                  title: 'd',
-                  fortuneValues: selectedNumbers,
-                  onPressed: (() {
-                    _wheel = _wheel.copyWith(items: selectedNumbers);
-                    _fortuneValuesController.sink.add(true);
-                    Navigator.pop(context, _wheel);
-                  }),
                 ),
                 StreamBuilder<bool>(
                   stream: _fortuneValuesController.stream,
                   builder: (context, snapshot) {
-                    // Rebuild UI based on stream values
                     return Text('Stream Value: ${snapshot.data}');
                   },
                 ),
@@ -171,5 +195,25 @@ class _CircleButtonsState extends State<CircleButtons> {
         ),
       ),
     );
+  }
+
+  _handleInsertItem(
+      Fortune _fortuneItem, Function(Fortune) onChangedCallback) async {
+    setState(() {
+      _wheel.items.add(_fortuneItem);
+    });
+    await CustomFormFortuneAddEdit(
+      isInsert: true,
+      fortuneItem: _fortuneItem,
+      onChanged: (fortuneItem) {
+        print('acceptin');
+        setState(() {
+          _wheel;
+        }); // Call the provided onChanged callback
+      },
+    );
+
+    // Call onChangedCallback immediately after CustomFormFortuneAddEdit
+    onChangedCallback(_fortuneItem);
   }
 }

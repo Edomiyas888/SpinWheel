@@ -72,25 +72,19 @@ class _FortuneWheelBackgroundState extends State<FortuneWheelBackground>
     _rotation = Tween(begin: 0.0, end: 360.0).animate(_rotation);
 
     return Stack(children: [
-      Image.asset(
-        'assets/images/tablebg.jpg', // Replace 'assets/background_image.jpg' with your image asset path
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-      ),
       widget.child,
-      // Container(
-      //   color: widget.backgroundColor,
-      //   child: CustomPaint(
-      //     painter: _BackgroundPainter(
-      //       painterController: _painterController,
-      //       rotateAngle: _rotation.value,
-      //       anglePerTriangle: 10,
-      //       numberTriangle: 15,
-      //     ),
-      //     child: widget.child,
-      //   ),
-      // ),
+      Container(
+        color: Colors.red,
+        child: CustomPaint(
+          painter: _BackgroundPainter(
+            painterController: _painterController,
+            rotateAngle: _rotation.value,
+            anglePerTriangle: 10,
+            numberTriangle: 15,
+          ),
+          child: widget.child,
+        ),
+      ),
     ]);
   }
 }

@@ -74,7 +74,7 @@ class _UserDropdownState extends State<PercentDropdown> {
               context: context,
               builder: (BuildContext context) {
                 return AlertDialog(
-                  title:const Text('Percent Updated'),
+                  title: const Text('Percent Updated'),
                   content: const Text('Percent updated successfully.'),
                   actions: <Widget>[
                     TextButton(
@@ -147,10 +147,10 @@ class _UserDropdownState extends State<PercentDropdown> {
                 child: Text(user['username']),
               );
             }).toList(),
-            hint: Text('Select a user'),
+            hint: const Text('Select a user'),
           ),
         ),
-      const  SizedBox(width: 10),
+        const SizedBox(width: 10),
         Expanded(
           child: TextField(
               controller: _pointsController,

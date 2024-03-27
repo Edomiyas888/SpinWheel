@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_fortune_wheel/flutter_fortune_wheel.dart';
 import 'package:flutter_fortune_wheel_example/common/constants.dart';
+import 'package:flutter_fortune_wheel_example/widgets/SignUp.dart';
 import 'package:flutter_fortune_wheel_example/widgets/custom_form_fortune_add_edit.dart';
 import 'package:flutter_fortune_wheel_example/widgets/dropdown.dart';
 import 'package:flutter_fortune_wheel_example/widgets/fortune_item.dart';
@@ -135,76 +136,42 @@ class _FortuneWheelSettingPageState extends State<FortuneWheelSettingPage> {
       child: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 16.0),
-          child: _userRole == 'admin'
-              ? Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              _buildGameMode(),
+              _buildDuration(),
+              Padding(
+                padding: const EdgeInsets.all(18.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildGameMode(),
                     const Text(
-                      'Reward Points',
+                      'Remaining Points',
                       style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: UserDropdown(),
-                    ),
-                    const Text(
-                      'Share Percentage',
+                    Text(
+                      _totalPoints.toString(),
                       style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: PercentDropdown(),
-                    ),
-                    _userRole == 'admin' ? _buildDuration() : Container(),
-                    _buildEditTitle(),
-                    _buildExpansionFortuneValues(),
-                    ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(context,
-                              MaterialPageRoute(builder: (context) => Login()));
-                        },
-                        child: Text('Log Out'))
-                  ],
-                )
-              : Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    _buildGameMode(),
-                    _userRole != 'admin' ? _buildDuration() : Container(),
-                    Padding(
-                      padding: const EdgeInsets.all(18.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Remaining Points',
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 18),
-                          ),
-                          Text(
-                            _totalPoints.toString(),
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 18),
-                          ),
-                        ],
-                      ),
-                    ),
-                    _buildEditTitle(),
-                    _buildExpansionFortuneValues(),
-                    SizedBox(
-                      height: 20,
-                    ),
-                    ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(context,
-                              MaterialPageRoute(builder: (context) => Login()));
-                        },
-                        child: Text('Log Out'))
                   ],
                 ),
+              ),
+              _buildEditTitle(),
+              _buildExpansionFortuneValues(),
+              SizedBox(
+                height: 20,
+              ),
+              ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(context,
+                        MaterialPageRoute(builder: (context) => Login()));
+                  },
+                  child: Text('Log Out'))
+            ],
+          ),
         ),
       ),
     );
@@ -654,7 +621,6 @@ class _FortuneWheelSettingPageState extends State<FortuneWheelSettingPage> {
       },
     );
   }
-  
 
   void _handleDeleteFortuneItemPressed(int index) {
     Widget cancelButton = TextButton(

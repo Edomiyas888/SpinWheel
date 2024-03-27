@@ -129,45 +129,48 @@ class _UserDropdownState extends State<UserDropdown> {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: DropdownButtonFormField<String>(
-            value: _selectedUserId,
-            onChanged: (String? userId) {
-              setState(() {
-                _selectedUserId = userId;
-                _fetchAwardedPoints(
-                    userId!); // Fetch awarded points when user is selected
-              });
-            },
-            items:
-                _users.map<DropdownMenuItem<String>>((DocumentSnapshot user) {
-              return DropdownMenuItem<String>(
-                value: user.id,
-                child: Text(user['username']),
-              );
-            }).toList(),
-            hint: Text('Select a user'),
-          ),
-        ),
-        SizedBox(width: 10),
-        Expanded(
-          child: TextField(
-            controller: _pointsController,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: 'Points',
-              border: OutlineInputBorder(),
+    return Container(
+      width: MediaQuery.of(context).size.width,
+      child: Row(
+        children: [
+          Expanded(
+            child: DropdownButtonFormField<String>(
+              value: _selectedUserId,
+              onChanged: (String? userId) {
+                setState(() {
+                  _selectedUserId = userId;
+                  _fetchAwardedPoints(
+                      userId!); // Fetch awarded points when user is selected
+                });
+              },
+              items:
+                  _users.map<DropdownMenuItem<String>>((DocumentSnapshot user) {
+                return DropdownMenuItem<String>(
+                  value: user.id,
+                  child: Text(user['username']),
+                );
+              }).toList(),
+              hint: Text('Select a user'),
             ),
           ),
-        ),
-        SizedBox(width: 10),
-        ElevatedButton(
-          onPressed: _submitPoints,
-          child: Text('Submit'),
-        ),
-      ],
+          SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              controller: _pointsController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: 'Points',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+          SizedBox(width: 10),
+          ElevatedButton(
+            onPressed: _submitPoints,
+            child: Text('Submit'),
+          ),
+        ],
+      ),
     );
   }
 

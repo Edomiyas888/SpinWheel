@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_fortune_wheel/flutter_fortune_wheel.dart';
 import 'package:flutter_fortune_wheel_example/common/constants.dart';
 import 'package:flutter_fortune_wheel_example/common/theme.dart';
+import 'package:flutter_fortune_wheel_example/pages/adminHomepage.dart';
 import 'package:flutter_fortune_wheel_example/pages/chooseNumber.dart';
 import 'package:flutter_fortune_wheel_example/pages/fortune_wheel_history_page.dart';
 import 'package:flutter_fortune_wheel_example/pages/fortune_wheel_setting_page.dart';
@@ -34,8 +35,8 @@ void main() async {
     MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: appTheme,
-      home: const MyApp(),
-      title: 'Wheel of Fortune',
+      home: MyApp(),
+      title: 'Spin to win',
     ),
   );
 }
@@ -65,11 +66,11 @@ class _MyAppState extends State<MyApp> {
   Wheel _wheel = Wheel(
     // items: Constants.icons2,
     // items: Constants.liXiNamMoi,
-    items: Constants.list12Item,
+    items: Constants.list36Item,
     isSpinByPriority: true,
     duration: const Duration(seconds: 10),
   );
-  String winningValue = "";
+  int winningValue = 0;
   @override
   double totalPlayers = 0.0;
   double _awardedPercent = 0;
@@ -96,7 +97,7 @@ class _MyAppState extends State<MyApp> {
             100);
 
     setState(() {
-      print(_pointChecker);
+      print("purew$_pointChecker");
     }); // Trigger rebuild after data is fetched
   }
 
@@ -149,7 +150,7 @@ class _MyAppState extends State<MyApp> {
                     width: 300,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(20),
-                      color: Color.fromARGB(255, 147, 224, 119),
+                      color: Color.fromARGB(255, 205, 15, 15),
                       boxShadow: [
                         BoxShadow(
                           color: const Color.fromARGB(255, 158, 158, 158)
@@ -181,7 +182,7 @@ class _MyAppState extends State<MyApp> {
                                 int second = int.tryParse(
                                         _totalPlayersController.text) ??
                                     0;
-                                if (second > 1) {
+                                if (second > 10) {
                                   second--;
 
                                   _totalPlayersController.text =
@@ -274,13 +275,13 @@ class _MyAppState extends State<MyApp> {
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 18,
-                                      color: Color.fromARGB(255, 90, 89, 89),
+                                      color: Color.fromARGB(255, 255, 255, 255),
                                     ),
                                   ),
                                   StreamBuilder<bool>(
                                     stream: _fortuneWheelController.stream,
                                     builder: (context, snapshot) {
-                                      var totalPlayers = _wheel.items.length *
+                                      totalPlayers = _wheel.items.length *
                                           (double.tryParse(
                                                   _totalPlayersController
                                                       .text) ??
@@ -312,7 +313,7 @@ class _MyAppState extends State<MyApp> {
                                     'Total Pay Out',
                                     style: TextStyle(
                                       fontSize: 15,
-                                      color: Color.fromARGB(255, 122, 121, 121),
+                                      color: Colors.white,
                                     ),
                                   ),
                                   StreamBuilder<bool>(
@@ -333,6 +334,7 @@ class _MyAppState extends State<MyApp> {
 
                                       if (snapshot.hasData &&
                                           snapshot.data == true) {
+                                        print(_awardedPercent / 100);
                                         return Text(
                                           totalPlayers
                                               .toStringAsFixed(2)
@@ -356,7 +358,26 @@ class _MyAppState extends State<MyApp> {
                       ],
                     )),
                 _buildFortuneWheel(),
-                Text(winningValue),
+                //Text(winningValue),
+                Container(
+                  width: 250, // Adjust the width as needed
+                  height: 250, // Adjust the height as needed
+                  decoration: BoxDecoration(
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color.fromARGB(255, 158, 158, 158)
+                            .withOpacity(0.5), // shadow color
+                        spreadRadius: 5, // spread radius
+                        blurRadius: 7, // blur radius
+                        offset: Offset(0, 3), // changes position of shadow
+                      ),
+                    ],
+                    shape: BoxShape.circle,
+                    color: Color.fromARGB(255, 0, 0, 0).withOpacity(
+                        1), // Change the background color as needed
+                  ),
+                  child: Center(child: _buildResultIsChange()),
+                ),
               ],
             )),
           ),
@@ -366,7 +387,6 @@ class _MyAppState extends State<MyApp> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 _buildHeader(),
-                _buildResultIsChange(),
               ],
             ),
           ),
@@ -396,14 +416,21 @@ class _MyAppState extends State<MyApp> {
         .collection('points')
         .where('userId', isEqualTo: _userId)
         .get();
-    int totalPoints = 0;
+
+    int totalPercent = 0;
+
     pointsSnapshot.docs.forEach((DocumentSnapshot doc) {
-      totalPoints += (doc['percent'] as int? ?? 0);
+      final dynamic percent = doc['percent'];
+      print("as$percent");
+      if (percent != null) {
+        totalPercent += percent as int ?? 0;
+      }
     });
-    print(totalPoints);
+
+    print("de$totalPercent"); // Add this line to check the totalPoints value
+
     setState(() {
-      _awardedPercent = totalPoints as double;
-      // Set points in TextField
+      _awardedPercent = totalPercent.toDouble();
     });
   }
 
@@ -415,7 +442,7 @@ class _MyAppState extends State<MyApp> {
       barrierDismissible: false, // user must tap button!
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Wheel of Fortune'),
+          title: const Text('Spin to win'),
           content: SingleChildScrollView(
             child: ListBody(
               children: <Widget>[
@@ -456,7 +483,7 @@ class _MyAppState extends State<MyApp> {
             ),
             const SizedBox(width: 16),
             const Text(
-              'Wheel of Fortune',
+              'Spin to win',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 20,
@@ -464,12 +491,20 @@ class _MyAppState extends State<MyApp> {
             ),
             const Spacer(),
             IconButton(
-              splashRadius: 28,
-              onPressed: () {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => CircleButtons(wheel: _wheel)));
+              onPressed: () async {
+                _fortuneWheelController.add(false);
+                final Wheel? result = await Navigator.push(
+                  context,
+                  MaterialPageRoute<Wheel>(
+                    builder: (context) => CircleButtons(wheel: _wheel),
+                  ),
+                );
+                if (result != null) {
+                  _wheel = result;
+                  _painterController.playAnimation();
+                }
+                _resultWheelController.sink.add(_wheel.items[0]);
+                _fortuneWheelController.add(true);
               },
               icon: const Icon(Icons.add, color: Colors.white),
             ),
@@ -527,6 +562,8 @@ class _MyAppState extends State<MyApp> {
               wheel: _wheel,
               onChanged: (Fortune item) {
                 _resultWheelController.sink.add(item);
+                winningValue =
+                    int.parse(item.titleName?.replaceAll('\n', '') ?? '0');
               },
               onResult: _onResult,
             );
@@ -534,14 +571,19 @@ class _MyAppState extends State<MyApp> {
         ),
       );
     } else {
-      return Text(
-        'Oops You are Out of Points !!!!!',
-        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      return Center(
+        child: Text(
+          'Oops! You are out of points!',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
       );
     }
   }
 
   Future<void> _onResult(Fortune item) async {
+    // setState(() {
+    //   winningValue = int.parse(item.titleName?.replaceAll('\n', '') ?? '0');
+    // });
     // Retrieve the UID of the user whose points need to be deducted
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? userId = prefs.getString('userId');
@@ -566,6 +608,9 @@ class _MyAppState extends State<MyApp> {
 
       // Calculate the new points after deduction
       int newPoints = (currentPoints - pointsToDeduct).toInt();
+      setState(() {
+        _pointChecker;
+      });
 
       // Update the points in Firestore
       await documentSnapshot.reference.update({'points': newPoints});
@@ -708,32 +753,25 @@ class _MyAppState extends State<MyApp> {
     return StreamBuilder<Fortune>(
       stream: _resultWheelController.stream,
       builder: (context, snapshot) {
-        return Padding(
-          padding: const EdgeInsets.only(
-              top: kIsWeb ? 0 : 16.0, left: 16, right: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Flexible(
-                child: Text(
-                  snapshot.data != null
-                      ? snapshot.data!.titleName?.replaceAll('\n', '') ?? ''
-                      : _wheel.items[0].titleName?.replaceAll('\n', '') ?? '',
-                  style: TextStyle(
-                    fontSize: 24,
-                    color: Colors.white.withOpacity(0.7),
-                    fontWeight: FontWeight.bold,
-                  ),
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Flexible(
+              child: Text(
+                snapshot.data != null
+                    ? snapshot.data!.titleName?.replaceAll('\n', '') ?? ''
+                    : _wheel.items[0].titleName?.replaceAll('\n', '') ?? '',
+                style: TextStyle(
+                  fontSize: 80,
+                  color: Color.fromARGB(255, 255, 255, 255),
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(left: 16),
-                child: snapshot.data != null
-                    ? snapshot.data!.icon ?? const SizedBox()
-                    : _wheel.items[0].icon ?? const SizedBox(),
-              ),
-            ],
-          ),
+            ),
+            snapshot.data != null
+                ? snapshot.data!.icon ?? const SizedBox()
+                : _wheel.items[0].icon ?? const SizedBox(),
+          ],
         );
       },
     );

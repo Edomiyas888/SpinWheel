@@ -73,8 +73,47 @@ class Constants {
         backgroundColor: Colors.primaries[4],
         icon: const Icon(Icons.star)),
   ];
-
   static List<Fortune> list12Item = <Fortune>[
+    Fortune(
+        id: 1,
+        titleName: '1',
+        backgroundColor: Color.fromARGB(255, 246, 28, 13),
+        priority: 1),
+    Fortune(id: 2, titleName: '2', backgroundColor: Colors.black, priority: 1),
+    Fortune(
+        id: 3,
+        titleName: '3',
+        backgroundColor: Color.fromARGB(255, 246, 28, 13),
+        priority: 1),
+    Fortune(id: 4, titleName: '4', backgroundColor: Colors.black, priority: 1),
+    Fortune(
+        id: 5,
+        titleName: '5',
+        backgroundColor: Color.fromARGB(255, 246, 28, 13),
+        priority: 1),
+    Fortune(id: 6, titleName: '6', backgroundColor: Colors.black, priority: 1),
+    Fortune(
+        id: 7,
+        titleName: '7',
+        backgroundColor: Color.fromARGB(255, 246, 28, 13),
+        priority: 1),
+    Fortune(id: 8, titleName: '8', backgroundColor: Colors.black, priority: 1),
+    Fortune(
+        id: 9,
+        titleName: '9',
+        backgroundColor: Color.fromARGB(255, 246, 28, 13),
+        priority: 1),
+    Fortune(
+        id: 10, titleName: '10', backgroundColor: Colors.black, priority: 1),
+    Fortune(
+        id: 11,
+        titleName: '11',
+        backgroundColor: Color.fromARGB(255, 246, 28, 13),
+        priority: 1),
+    Fortune(
+        id: 12, titleName: '12', backgroundColor: Colors.black, priority: 1),
+  ];
+  static List<Fortune> list36Item = <Fortune>[
     Fortune(
         id: 1,
         titleName: '1',

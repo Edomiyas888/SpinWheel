@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_fortune_wheel_example/Firebase_auth/firebae_auth_services.dart';
 import 'package:flutter_fortune_wheel_example/main.dart';
+import 'package:flutter_fortune_wheel_example/pages/adminHomepage.dart';
 import 'package:flutter_fortune_wheel_example/widgets/SignUp.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -13,12 +14,18 @@ class Login extends StatefulWidget {
 }
 
 class _LoginState extends State<Login> {
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+  }
+
   final FirebaseAuthServices _auth = FirebaseAuthServices();
   TextEditingController _emailController = TextEditingController();
   TextEditingController _passwordController = TextEditingController();
   TextEditingController _confirmPasswordController = TextEditingController();
   bool isLoading = false;
-
+  String userRole = "";
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -35,12 +42,6 @@ class _LoginState extends State<Login> {
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            // Image.asset(
-            //   'assets/images/prime_logo.png',
-            //   width: 150,
-            //   height: 150,
-            //   fit: BoxFit.contain,
-            // ),
             const Text(
               'Login',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
@@ -65,30 +66,12 @@ class _LoginState extends State<Login> {
                   SizedBox(
                     height: 18,
                   ),
-                  // Row(
-                  //   mainAxisAlignment: MainAxisAlignment.center,
-                  //   children: [
-                  //     Text('Don\'t have an account? '),
-                  //     GestureDetector(
-                  //       child: Text(
-                  //         'Sign Up',
-                  //         style: TextStyle(fontWeight: FontWeight.w900),
-                  //       ),
-                  //       onTap: () {
-                  //         Navigator.push(
-                  //           context,
-                  //           MaterialPageRoute(builder: (context) => SignUp()),
-                  //         );
-                  //       },
-                  //     )
-                  //   ],
-                  // )
                 ],
               ),
             ),
             ElevatedButton(
-              onPressed: _signIn,
-              child: Text('Login'),
+              onPressed: isLoading ? null : _signIn,
+              child: isLoading ? CircularProgressIndicator() : Text('Login'),
             ),
           ],
         ),
@@ -97,19 +80,25 @@ class _LoginState extends State<Login> {
   }
 
   void _signIn() async {
+    setState(() {
+      isLoading = true;
+    });
+
     String email = _emailController.text;
     String password = _passwordController.text;
-    String confirmPassword = _confirmPasswordController.text;
 
     User? user =
         await _auth.signInWithEmailAndPassword(email, password, context);
 
     if (user != null) {
-      print(user.uid);
-      _auth.getUserRole(user.uid);
-
-      // Store the UID in shared preferences
+      await _auth.getUserRole(user.uid); // Retrieve user role
       await _storeUserIdInSharedPreferences(user.uid);
+
+      await _loadUserRole(); // Load user role after it's fetched
+      print(userRole);
+      setState(() {
+        isLoading = false;
+      });
 
       final snackBar = SnackBar(
         content: const Text('Successful Login!'),
@@ -122,8 +111,16 @@ class _LoginState extends State<Login> {
         ),
       );
       ScaffoldMessenger.of(context).showSnackBar(snackBar);
-      Navigator.push(context, MaterialPageRoute(builder: (context) => MyApp()));
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => userRole == "admin" ? Dashboard() : MyApp(),
+        ),
+      );
     } else {
+      setState(() {
+        isLoading = false;
+      });
       // Handle login failure
     }
   }
@@ -131,5 +128,11 @@ class _LoginState extends State<Login> {
   Future<void> _storeUserIdInSharedPreferences(String userId) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('userId', userId);
+  }
+
+  Future<void> _loadUserRole() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    userRole = prefs.getString('userRole') ?? '';
+    setState(() {}); // This will trigger a rebuild with the updated userRole
   }
 }
