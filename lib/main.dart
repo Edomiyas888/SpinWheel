@@ -395,6 +395,12 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
+  void _spinPressed() {
+    _buildFortuneWheel();
+
+    // Add your logic here for handling the spin button press
+  }
+
   Future<void> _fetchAwardedPoints() async {
     final QuerySnapshot pointsSnapshot = await FirebaseFirestore.instance
         .collection('points')
@@ -557,16 +563,19 @@ class _MyAppState extends State<MyApp> {
             if (snapshot.data == false) {
               return const SizedBox.shrink();
             }
-            return FortuneWheel(
-              key: const ValueKey<String>('ValueKeyFortunerWheel'),
-              wheel: _wheel,
-              onChanged: (Fortune item) {
-                _resultWheelController.sink.add(item);
-                winningValue =
-                    int.parse(item.titleName?.replaceAll('\n', '') ?? '0');
-              },
-              onResult: _onResult,
-            );
+            return _pointChecker
+                ? FortuneWheel(
+                    key: const ValueKey<String>('ValueKeyFortunerWheel'),
+                    wheel: _wheel,
+                    onChanged: (Fortune item) {
+                      _resultWheelController.sink.add(item);
+                      winningValue = int.parse(
+                          item.titleName?.replaceAll('\n', '') ?? '0');
+                      _spinPressed();
+                    },
+                    onResult: _onResult,
+                  )
+                : Card();
           },
         ),
       );
