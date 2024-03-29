@@ -87,6 +87,8 @@ class _FortuneWheelSettingPageState extends State<FortuneWheelSettingPage> {
       _totalPoints = totalPoints;
       // Set points in TextField
     });
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('totalPoints', totalPoints);
   }
 
   @override

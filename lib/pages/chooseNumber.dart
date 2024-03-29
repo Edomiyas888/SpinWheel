@@ -148,32 +148,49 @@ class _CircleButtonsState extends State<CircleButtons> {
                 SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () async {
-                    // Check if there are at least 2 selected items before submitting
                     int selectedCount =
                         _isClicked.where((clicked) => clicked).length;
                     if (selectedCount >= 2) {
                       List<Fortune> selectedItems = [];
+                      bool previousIsRed =
+                          false; // Track the color of the previous item
+
+                      // Iterate through the selected numbers
                       for (int i = 0; i < _isClicked.length; i++) {
                         if (_isClicked[i]) {
                           // Convert index to 1-based position
+                          int value = i + 1;
+
+                          // Ensure alternating colors for consecutive numbers
+                          Color backgroundColor =
+                              previousIsRed ? Colors.black : Colors.red;
+                          previousIsRed = !previousIsRed;
+
+                          // Add the selected number to the list
                           selectedItems.add(Fortune(
                             id: selectedItems.length + 1,
-                            titleName: '${i + 1}',
-                            backgroundColor:
-                                i % 2 == 0 ? Colors.red : Colors.black,
+                            titleName: '$value',
+                            backgroundColor: backgroundColor,
                             priority: 10,
                           ));
                         }
                       }
 
-                      // Stream only the selected items
-                      _fortuneValuesController.sink.add(true);
+                      // If the number of selected items is odd, add a "0" with green color
+                      if (selectedCount % 2 == 1) {
+                        selectedItems.add(Fortune(
+                          id: selectedItems.length + 1,
+                          titleName: '0',
+                          backgroundColor: Colors.green,
+                          priority: 10,
+                        ));
+                      }
 
+                      // Update the wheel with selected items
                       setState(() {
                         _wheel = Wheel(items: selectedItems);
                       });
 
-                      print(_wheel);
                       Navigator.pop(context, _wheel);
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(

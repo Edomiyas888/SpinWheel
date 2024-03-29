@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:confetti/confetti.dart';
@@ -16,6 +17,7 @@ import 'package:flutter_fortune_wheel_example/pages/fortune_wheel_history_page.d
 import 'package:flutter_fortune_wheel_example/pages/fortune_wheel_setting_page.dart';
 import 'package:flutter_fortune_wheel_example/widgets/fortune_wheel_background.dart';
 import 'package:flutter_fortune_wheel_example/widgets/login.dart';
+import 'package:flutter_fortune_wheel_example/widgets/prizeCircle.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -49,6 +51,8 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  late AudioPlayer player = AudioPlayer();
+
   final StreamController<Fortune> _resultWheelController =
       StreamController<Fortune>.broadcast();
 
@@ -77,14 +81,41 @@ class _MyAppState extends State<MyApp> {
   double _awardedPoints = 0;
   String _userId = "";
   bool _pointChecker = false;
+  ValueNotifier<bool> _pointCheckerNotifier = ValueNotifier<bool>(false);
+  int _totalPoints = 0;
+  int _localPoints = 0;
+
   void initState() {
     super.initState();
+    _totalPoints = _awardedPoints as int;
+    _loadTotalPoints();
+    _timer = Timer.periodic(Duration(seconds: 10), (timer) {
+      setState(() {
+        _pointCheckerNotifier;
+      });
+    });
+
     _totalPlayersController.text = "10";
     _painterController.playAnimation();
     _confettiController =
         ConfettiController(duration: const Duration(seconds: 10));
-    _initializeData(); // Call a new method to ensure everything is properly initialized
+    _initializeData();
+    player = AudioPlayer();
+
+    // Set the release mode to keep the source after playback has completed.
+    player.setReleaseMode(ReleaseMode.stop);
+
+    // Start the player as soon as the app is displayed.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await player.setSource(
+          AssetSource('assets/Sounds/bike-back-wheel-coasting-74816.mp3'));
+      await player.resume();
+    });
+    // Call a new method to ensure everything is properly initialized
   }
+
+  late Timer _timer;
+  PlayerState? _playerState;
 
   Future<void> _initializeData() async {
     await _loadUserId();
@@ -95,10 +126,12 @@ class _MyAppState extends State<MyApp> {
             (double.tryParse(_totalPlayersController.text) ?? 0.0) *
             _awardedPoints /
             100);
+    _pointCheckerNotifier.value = _pointChecker; // Update the ValueNotifier
+    print("purew$_pointChecker");
 
     setState(() {
-      print("purew$_pointChecker");
-    }); // Trigger rebuild after data is fetched
+      // Call setState to trigger a rebuild after updating _pointChecker
+    });
   }
 
   Future<void> _loadUserId() async {
@@ -109,12 +142,24 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+  final AudioPlayer _audioPlayer = AudioPlayer();
+
+  Future<void> _loadTotalPoints() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    int? totalPoints = prefs.getInt('totalPoints');
+    setState(() {
+      _totalPoints = totalPoints ?? 0;
+      _localPoints = totalPoints ?? 0;
+    });
+  }
+
   @override
   void dispose() {
     super.dispose();
     _resultWheelController.close();
     _fortuneWheelController.close();
     _totalPlayersController.dispose();
+    _timer.cancel();
     _confettiController.dispose();
   }
 
@@ -145,219 +190,265 @@ class _MyAppState extends State<MyApp> {
                 child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                Container(
-                    height: 250,
-                    width: 300,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      color: Color.fromARGB(255, 205, 15, 15),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color.fromARGB(255, 158, 158, 158)
-                              .withOpacity(0.5), // shadow color
-                          spreadRadius: 5, // spread radius
-                          blurRadius: 7, // blur radius
-                          offset: Offset(0, 3), // changes position of shadow
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        const Text(
-                          'Stake',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 28,
-                              color: Colors.white),
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            InkWell(
-                              onTap: () {
-                                FocusScope.of(context).unfocus();
-                                int second = int.tryParse(
-                                        _totalPlayersController.text) ??
-                                    0;
-                                if (second > 10) {
-                                  second--;
-
-                                  _totalPlayersController.text =
-                                      second.toString();
-                                  setState(() {});
-                                }
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                    color: Colors.blue,
-                                    borderRadius: BorderRadius.circular(8)),
-                                child: Transform.rotate(
-                                  angle: pi / 2,
-                                  child: const Icon(
-                                    Icons.arrow_forward_ios,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              width: 100,
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(8),
-                                border:
-                                    Border.all(color: Colors.blue, width: 1),
-                              ),
-                              child: TextField(
-                                controller: _totalPlayersController,
-                                keyboardType: TextInputType.number,
-                                textAlign: TextAlign.center,
-                                decoration: const InputDecoration.collapsed(
-                                    hintText: 'Enter spin time'),
-                                onChanged: (String? value) {
-                                  if (value == '') {
-                                    _totalPlayersController.text = '1';
-                                  }
-                                  int? second = int.tryParse(
-                                      _totalPlayersController.text);
-                                  if (second != null) {}
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            InkWell(
-                              onTap: () {
-                                FocusScope.of(context).unfocus();
-                                int second = int.tryParse(
-                                        _totalPlayersController.text) ??
-                                    0;
-                                second++;
-
-                                _totalPlayersController.text =
-                                    second.toString();
-                                setState(() {});
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                    color: Colors.blue,
-                                    borderRadius: BorderRadius.circular(8)),
-                                child: Transform.rotate(
-                                  angle: -pi / 2,
-                                  child: const Icon(
-                                    Icons.arrow_forward_ios,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                ),
-                              ),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Container(
+                        height: 250,
+                        width: 300,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          color: Color.fromARGB(255, 205, 15, 15),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color.fromARGB(255, 158, 158, 158)
+                                  .withOpacity(0.5), // shadow color
+                              spreadRadius: 5, // spread radius
+                              blurRadius: 7, // blur radius
+                              offset:
+                                  Offset(0, 3), // changes position of shadow
                             ),
                           ],
                         ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text(
-                                    "Total Players",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 18,
-                                      color: Color.fromARGB(255, 255, 255, 255),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            const Text(
+                              'Stake',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 28,
+                                  color: Colors.white),
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                InkWell(
+                                  onTap: () {
+                                    FocusScope.of(context).unfocus();
+                                    int second = int.tryParse(
+                                            _totalPlayersController.text) ??
+                                        0;
+                                    if (second > 10) {
+                                      second--;
+
+                                      _totalPlayersController.text =
+                                          second.toString();
+                                      setState(() {});
+                                    }
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                        color: Colors.blue,
+                                        borderRadius: BorderRadius.circular(8)),
+                                    child: Transform.rotate(
+                                      angle: pi / 2,
+                                      child: const Icon(
+                                        Icons.arrow_forward_ios,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
                                     ),
                                   ),
-                                  StreamBuilder<bool>(
-                                    stream: _fortuneWheelController.stream,
-                                    builder: (context, snapshot) {
-                                      totalPlayers = _wheel.items.length *
-                                          (double.tryParse(
-                                                  _totalPlayersController
-                                                      .text) ??
-                                              0.0);
-
-                                      if (snapshot.hasData &&
-                                          snapshot.data == true) {
-                                        return Text(
-                                          _wheel.items.length.toString(),
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 28,
-                                            color: Colors.white,
-                                          ),
-                                        );
-                                      } else {
-                                        return const SizedBox.shrink();
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  width: 100,
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                        color: Colors.blue, width: 1),
+                                  ),
+                                  child: TextField(
+                                    controller: _totalPlayersController,
+                                    keyboardType: TextInputType.number,
+                                    textAlign: TextAlign.center,
+                                    decoration: const InputDecoration.collapsed(
+                                        hintText: 'Enter spin time'),
+                                    onChanged: (String? value) {
+                                      if (value == '') {
+                                        _totalPlayersController.text = '1';
                                       }
+                                      int? second = int.tryParse(
+                                          _totalPlayersController.text);
+                                      if (second != null) {}
                                     },
                                   ),
-                                ],
-                              ),
-                              const Divider(),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Total Pay Out',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      color: Colors.white,
+                                ),
+                                const SizedBox(width: 8),
+                                InkWell(
+                                  onTap: () {
+                                    FocusScope.of(context).unfocus();
+                                    int second = int.tryParse(
+                                            _totalPlayersController.text) ??
+                                        0;
+                                    second++;
+
+                                    _totalPlayersController.text =
+                                        second.toString();
+                                    setState(() {});
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                        color: Colors.blue,
+                                        borderRadius: BorderRadius.circular(8)),
+                                    child: Transform.rotate(
+                                      angle: -pi / 2,
+                                      child: const Icon(
+                                        Icons.arrow_forward_ios,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
                                     ),
                                   ),
-                                  StreamBuilder<bool>(
-                                    stream: _fortuneWheelController.stream,
-                                    builder: (context, snapshot) {
-                                      var totalPlayers = _wheel.items.length *
+                                ),
+                              ],
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text(
+                                        "Total Players",
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 18,
+                                          color: Color.fromARGB(
+                                              255, 255, 255, 255),
+                                        ),
+                                      ),
+                                      StreamBuilder<bool>(
+                                        stream: _fortuneWheelController.stream,
+                                        builder: (context, snapshot) {
+                                          totalPlayers = _wheel.items.length *
                                               (double.tryParse(
                                                       _totalPlayersController
                                                           .text) ??
-                                                  0.0) -
-                                          (_wheel.items.length *
-                                              (double.tryParse(
-                                                      _totalPlayersController
-                                                          .text) ??
-                                                  0.0) *
-                                              _awardedPercent /
-                                              100);
+                                                  0.0);
 
-                                      if (snapshot.hasData &&
-                                          snapshot.data == true) {
-                                        print(_awardedPercent / 100);
-                                        return Text(
-                                          totalPlayers
-                                              .toStringAsFixed(2)
-                                              .toString(),
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 28,
-                                            color: Colors.white,
-                                          ),
-                                        );
-                                      } else {
-                                        return const SizedBox.shrink();
-                                      }
-                                    },
+                                          if (snapshot.hasData &&
+                                              snapshot.data == true) {
+                                            return Text(
+                                              _wheel.items.length.toString(),
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 28,
+                                                color: Colors.white,
+                                              ),
+                                            );
+                                          } else {
+                                            return const SizedBox.shrink();
+                                          }
+                                        },
+                                      ),
+                                    ],
                                   ),
+                                  const Divider(),
+                                  // Row(
+                                  //   mainAxisAlignment:
+                                  //       MainAxisAlignment.spaceBetween,
+                                  //   children: [
+                                  //     Text(
+                                  //       'Total Pay Out',
+                                  //       style: TextStyle(
+                                  //         fontSize: 15,
+                                  //         color: Colors.white,
+                                  //       ),
+                                  //     ),
+                                  //     StreamBuilder<bool>(
+                                  //       stream: _fortuneWheelController.stream,
+                                  //       builder: (context, snapshot) {
+                                  //         var totalPlayers = _wheel
+                                  //                     .items.length *
+                                  //                 (double.tryParse(
+                                  //                         _totalPlayersController
+                                  //                             .text) ??
+                                  //                     0.0) -
+                                  //             (_wheel.items.length *
+                                  //                 (double.tryParse(
+                                  //                         _totalPlayersController
+                                  //                             .text) ??
+                                  //                     0.0) *
+                                  //                 _awardedPercent /
+                                  //                 100);
+
+                                  //         if (snapshot.hasData &&
+                                  //             snapshot.data == true) {
+                                  //           print(_awardedPercent / 100);
+                                  //           return Text(
+                                  //             totalPlayers
+                                  //                 .toStringAsFixed(2)
+                                  //                 .toString(),
+                                  //             style: TextStyle(
+                                  //               fontWeight: FontWeight.bold,
+                                  //               fontSize: 28,
+                                  //               color: Colors.white,
+                                  //             ),
+                                  //           );
+                                  //         } else {
+                                  //           return const SizedBox.shrink();
+                                  //         }
+                                  //       },
+                                  //     ),
+                                  //   ],
+                                  // ),
                                 ],
                               ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    )),
-                _buildFortuneWheel(),
+                            ),
+                          ],
+                        )),
+                    StreamBuilder<bool>(
+                        stream: _fortuneWheelController.stream,
+                        builder: (context, snapshot) {
+                          var totalPlayers = _wheel.items.length *
+                                  (double.tryParse(
+                                          _totalPlayersController.text) ??
+                                      0.0) -
+                              (_wheel.items.length *
+                                  (double.tryParse(
+                                          _totalPlayersController.text) ??
+                                      0.0) *
+                                  _awardedPercent /
+                                  100);
+                          print("Snapshot Data: ${snapshot.data}");
+                          print("Prize Amount: $totalPlayers");
+
+                          if (snapshot.hasData && snapshot.data == true) {
+                            print(_awardedPercent / 100);
+                            return PrizeCircle(prizeAmount: totalPlayers);
+                          } else {
+                            return const SizedBox.shrink();
+                          }
+                        })
+                  ],
+                ),
+                ValueListenableBuilder<bool>(
+                  valueListenable: _pointCheckerNotifier,
+                  builder: (context, _pointChecker, _) {
+                    print("Local Points:$_localPoints");
+
+                    return _pointChecker
+                        ? _buildFortuneWheel()
+                        : Text(
+                            'Oops You are out of Points',
+                            style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white),
+                          );
+                  },
+                ),
                 //Text(winningValue),
                 Container(
                   width: 250, // Adjust the width as needed
@@ -393,12 +484,6 @@ class _MyAppState extends State<MyApp> {
         ],
       ),
     );
-  }
-
-  void _spinPressed() {
-    _buildFortuneWheel();
-
-    // Add your logic here for handling the spin button press
   }
 
   Future<void> _fetchAwardedPoints() async {
@@ -555,6 +640,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   Widget _buildFortuneWheel() {
+    print("sd$_totalPoints");
     if (_pointChecker) {
       return Center(
         child: StreamBuilder<bool>(
@@ -563,7 +649,7 @@ class _MyAppState extends State<MyApp> {
             if (snapshot.data == false) {
               return const SizedBox.shrink();
             }
-            return _pointChecker
+            return _totalPoints > 0 && _localPoints > 0
                 ? FortuneWheel(
                     key: const ValueKey<String>('ValueKeyFortunerWheel'),
                     wheel: _wheel,
@@ -571,11 +657,16 @@ class _MyAppState extends State<MyApp> {
                       _resultWheelController.sink.add(item);
                       winningValue = int.parse(
                           item.titleName?.replaceAll('\n', '') ?? '0');
-                      _spinPressed();
                     },
                     onResult: _onResult,
                   )
-                : Card();
+                : Text(
+                    'Oops You are out of Points',
+                    style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white),
+                  );
           },
         ),
       );
@@ -590,6 +681,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _onResult(Fortune item) async {
+    print("Local Points:$_localPoints");
     // setState(() {
     //   winningValue = int.parse(item.titleName?.replaceAll('\n', '') ?? '0');
     // });
@@ -600,13 +692,20 @@ class _MyAppState extends State<MyApp> {
     // Calculate the points to deduct
     double pointsToDeduct = _wheel.items.length *
         (double.tryParse(_totalPlayersController.text) ?? 0.0) *
-        0.2;
+        _awardedPercent /
+        100;
 
     // Retrieve the user's current balance from Firestore
     QuerySnapshot querySnapshot = await FirebaseFirestore.instance
         .collection('points')
         .where('userId', isEqualTo: userId)
         .get();
+    SharedPreferences pref = await SharedPreferences.getInstance();
+    int? totalPoints = prefs.getInt('totalPoints');
+    int newTotalPoints = (totalPoints ?? 0) - pointsToDeduct.toInt();
+
+    // Update the total points in shared preferences
+    await prefs.setInt('totalPoints', newTotalPoints);
 
     if (querySnapshot.docs.isNotEmpty) {
       // Access the data of the first document in the QuerySnapshot
@@ -617,18 +716,23 @@ class _MyAppState extends State<MyApp> {
 
       // Calculate the new points after deduction
       int newPoints = (currentPoints - pointsToDeduct).toInt();
-      setState(() {
-        _pointChecker;
-      });
 
       // Update the points in Firestore
       await documentSnapshot.reference.update({'points': newPoints});
 
       // Print the updated points value
       print('Points updated successfully. New points: $newPoints');
+      setState(() {
+        _totalPoints = newPoints;
+      });
     } else {
+      setState(() {
+        _localPoints = newTotalPoints;
+        _play;
+      });
       print('No documents found for the given query.');
     }
+    setState(() {});
   }
 
   // Future<void> _onResult(Fortune item) async {
@@ -757,6 +861,10 @@ class _MyAppState extends State<MyApp> {
   //   );
   //   _resultsHistory.add(item);
   // }
+  Future<void> _play() async {
+    await player.resume();
+    setState(() => _playerState = PlayerState.playing);
+  }
 
   Widget _buildResultIsChange() {
     return StreamBuilder<Fortune>(
