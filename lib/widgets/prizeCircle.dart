@@ -31,12 +31,19 @@ class _PrizeCircleState extends State<PrizeCircle>
   }
 
   @override
+  @override
   void didUpdateWidget(covariant PrizeCircle oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Check if the prize amount has changed
     if (widget.prizeAmount != _currentPrizeAmount) {
       _currentPrizeAmount =
           widget.prizeAmount; // Update the current prize amount
+      // Update the animation's value with the new prize amount
+      _animation = Tween<double>(begin: 0, end: widget.prizeAmount).animate(
+          CurvedAnimation(parent: _controller, curve: Curves.easeInOut))
+        ..addListener(() {
+          setState(() {});
+        });
       // Restart the animation with the new prize amount
       _controller.reset();
       _controller.forward();

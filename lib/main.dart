@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:html' as html; // Import dart:html
+
 import 'dart:math';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:confetti/confetti.dart';
+import 'package:connectivity/connectivity.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +18,7 @@ import 'package:flutter_fortune_wheel_example/pages/adminHomepage.dart';
 import 'package:flutter_fortune_wheel_example/pages/chooseNumber.dart';
 import 'package:flutter_fortune_wheel_example/pages/fortune_wheel_history_page.dart';
 import 'package:flutter_fortune_wheel_example/pages/fortune_wheel_setting_page.dart';
+import 'package:flutter_fortune_wheel_example/pages/spinHistory.dart';
 import 'package:flutter_fortune_wheel_example/widgets/fortune_wheel_background.dart';
 import 'package:flutter_fortune_wheel_example/widgets/login.dart';
 import 'package:flutter_fortune_wheel_example/widgets/prizeCircle.dart';
@@ -84,6 +88,8 @@ class _MyAppState extends State<MyApp> {
   ValueNotifier<bool> _pointCheckerNotifier = ValueNotifier<bool>(false);
   int _totalPoints = 0;
   int _localPoints = 0;
+  late Timer _connectionTimer;
+  late bool _hasConnection; // Initially assuming there's a connection
 
   void initState() {
     super.initState();
@@ -94,7 +100,8 @@ class _MyAppState extends State<MyApp> {
         _pointCheckerNotifier;
       });
     });
-
+    _hasConnection = true; // Assume there's a connection initially
+    _startConnectionCheck();
     _totalPlayersController.text = "10";
     _painterController.playAnimation();
     _confettiController =
@@ -116,6 +123,22 @@ class _MyAppState extends State<MyApp> {
 
   late Timer _timer;
   PlayerState? _playerState;
+  Future<void> _startConnectionCheck() async {
+    var connectivityResult = await Connectivity().checkConnectivity();
+    _updateConnectionStatus(
+        connectivityResult); // Update connection status based on initial check
+
+    Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
+      _updateConnectionStatus(
+          result); // Update connection status when connectivity changes
+    });
+  }
+
+  void _updateConnectionStatus(ConnectivityResult result) {
+    setState(() {
+      _hasConnection = result != ConnectivityResult.none;
+    });
+  }
 
   Future<void> _initializeData() async {
     await _loadUserId();
@@ -170,7 +193,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    print("Percent: $_awardedPercent");
+    print("connection: $_hasConnection");
     print(_pointChecker);
 
     return Scaffold(
@@ -267,16 +290,24 @@ class _MyAppState extends State<MyApp> {
                                   child: TextField(
                                     controller: _totalPlayersController,
                                     keyboardType: TextInputType.number,
+                                    inputFormatters: <TextInputFormatter>[
+                                      FilteringTextInputFormatter
+                                          .digitsOnly // Allow only digits
+                                    ],
                                     textAlign: TextAlign.center,
                                     decoration: const InputDecoration.collapsed(
-                                        hintText: 'Enter spin time'),
+                                        hintText: 'Enter Stake'),
                                     onChanged: (String? value) {
                                       if (value == '') {
-                                        _totalPlayersController.text = '1';
+                                        _totalPlayersController.text =
+                                            '10'; // Set default value to 10 if empty
+                                      } else {
+                                        int? second = int.tryParse(value!);
+                                        if (second != null && second <= 10) {
+                                          // If entered value is less than or equal to 10, set it to 11
+                                          _totalPlayersController.text = '11';
+                                        }
                                       }
-                                      int? second = int.tryParse(
-                                          _totalPlayersController.text);
-                                      if (second != null) {}
                                     },
                                   ),
                                 ),
@@ -341,7 +372,7 @@ class _MyAppState extends State<MyApp> {
                                               snapshot.data == true) {
                                             return Text(
                                               _wheel.items.length.toString(),
-                                              style: TextStyle(
+                                              style: const TextStyle(
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 28,
                                                 color: Colors.white,
@@ -426,7 +457,17 @@ class _MyAppState extends State<MyApp> {
 
                           if (snapshot.hasData && snapshot.data == true) {
                             print(_awardedPercent / 100);
-                            return PrizeCircle(prizeAmount: totalPlayers);
+                            return PrizeCircle(
+                                prizeAmount: _wheel.items.length *
+                                        (double.tryParse(
+                                                _totalPlayersController.text) ??
+                                            0.0) -
+                                    (_wheel.items.length *
+                                        (double.tryParse(
+                                                _totalPlayersController.text) ??
+                                            0.0) *
+                                        _awardedPercent /
+                                        100));
                           } else {
                             return const SizedBox.shrink();
                           }
@@ -440,8 +481,8 @@ class _MyAppState extends State<MyApp> {
 
                     return _pointChecker
                         ? _buildFortuneWheel()
-                        : Text(
-                            'Oops You are out of Points',
+                        : const Text(
+                            'Oops You are out of Points or check Connection',
                             style: TextStyle(
                                 fontSize: 28,
                                 fontWeight: FontWeight.bold,
@@ -605,9 +646,7 @@ class _MyAppState extends State<MyApp> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => FortuneWheelHistoryPage(
-                      resultsHistory: _resultsHistory,
-                    ),
+                    builder: (context) => SpinHistoryPage(),
                   ),
                 );
               },
@@ -620,8 +659,10 @@ class _MyAppState extends State<MyApp> {
                 final Wheel? result = await Navigator.push(
                   context,
                   MaterialPageRoute<Wheel>(
-                    builder: (context) =>
-                        FortuneWheelSettingPage(wheel: _wheel),
+                    builder: (context) => FortuneWheelSettingPage(
+                      wheel: _wheel,
+                      localPoints: _localPoints,
+                    ),
                   ),
                 );
                 if (result != null) {
@@ -640,16 +681,19 @@ class _MyAppState extends State<MyApp> {
   }
 
   Widget _buildFortuneWheel() {
-    print("sd$_totalPoints");
-    if (_pointChecker) {
-      return Center(
-        child: StreamBuilder<bool>(
-          stream: _fortuneWheelController.stream,
-          builder: (context, snapshot) {
-            if (snapshot.data == false) {
-              return const SizedBox.shrink();
-            }
-            return _totalPoints > 0 && _localPoints > 0
+    return Center(
+      child: StreamBuilder<ConnectivityResult>(
+        stream: Connectivity().onConnectivityChanged,
+        builder: (context, snapshot) {
+          if (snapshot.data == ConnectivityResult.none) {
+            // Hide the page content if there's no network connectivity
+            return SizedBox.shrink();
+          } else {
+            // Render the fortune wheel if there's network connectivity
+            return _totalPoints > 0 &&
+                    _localPoints > 0 &&
+                    _awardedPercent != 0 &&
+                    _hasConnection
                 ? FortuneWheel(
                     key: const ValueKey<String>('ValueKeyFortunerWheel'),
                     wheel: _wheel,
@@ -660,42 +704,46 @@ class _MyAppState extends State<MyApp> {
                     },
                     onResult: _onResult,
                   )
-                : Text(
-                    'Oops You are out of Points',
-                    style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white),
-                  );
-          },
-        ),
-      );
-    } else {
-      return Center(
-        child: Text(
-          'Oops! You are out of points!',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-      );
-    }
+                : _checkNetworkConnectivity();
+          }
+        },
+      ),
+    );
+  }
+
+  Widget _checkNetworkConnectivity() {
+    return StreamBuilder<ConnectivityResult>(
+      stream: Connectivity().onConnectivityChanged,
+      builder: (context, snapshot) {
+        if (snapshot.data == ConnectivityResult.none) {
+          return SizedBox
+              .shrink(); // This will make the wheel disappear when there's no network connection
+        } else {
+          return Text(
+            'No Network!',
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          );
+        }
+      },
+    );
   }
 
   Future<void> _onResult(Fortune item) async {
+    // Check connectivity
+    var connectivityResult = await Connectivity().checkConnectivity();
+
+    // Your existing logic for processing the spin result
     print("Local Points:$_localPoints");
-    // setState(() {
-    //   winningValue = int.parse(item.titleName?.replaceAll('\n', '') ?? '0');
-    // });
-    // Retrieve the UID of the user whose points need to be deducted
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? userId = prefs.getString('userId');
-
-    // Calculate the points to deduct
     double pointsToDeduct = _wheel.items.length *
         (double.tryParse(_totalPlayersController.text) ?? 0.0) *
         _awardedPercent /
         100;
-
-    // Retrieve the user's current balance from Firestore
     QuerySnapshot querySnapshot = await FirebaseFirestore.instance
         .collection('points')
         .where('userId', isEqualTo: userId)
@@ -703,34 +751,36 @@ class _MyAppState extends State<MyApp> {
     SharedPreferences pref = await SharedPreferences.getInstance();
     int? totalPoints = prefs.getInt('totalPoints');
     int newTotalPoints = (totalPoints ?? 0) - pointsToDeduct.toInt();
-
-    // Update the total points in shared preferences
     await prefs.setInt('totalPoints', newTotalPoints);
-
-    if (querySnapshot.docs.isNotEmpty) {
-      // Access the data of the first document in the QuerySnapshot
+    if (querySnapshot.docs.isNotEmpty && _localPoints > 0) {
       DocumentSnapshot documentSnapshot = querySnapshot.docs.first;
-
-      // Access the 'points' field from the document data
       int currentPoints = documentSnapshot['points'] as int;
-
-      // Calculate the new points after deduction
       int newPoints = (currentPoints - pointsToDeduct).toInt();
-
-      // Update the points in Firestore
       await documentSnapshot.reference.update({'points': newPoints});
-
-      // Print the updated points value
       print('Points updated successfully. New points: $newPoints');
       setState(() {
         _totalPoints = newPoints;
       });
-    } else {
+      Timestamp timestamp = Timestamp.now();
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('history')
+          .add({
+        'prizeAmount': totalPlayers * _awardedPercent / 100,
+        'timestamp': timestamp,
+      });
+    }
+    //  else if (querySnapshot.docs.isNotEmpty && _localPoints < 0) {
+    //   DocumentSnapshot documentSnapshot = querySnapshot.docs.first;
+    //   await documentSnapshot.reference.update({'points': _localPoints});
+    // }
+    else {
       setState(() {
-        _localPoints = newTotalPoints;
+        _localPoints = -1;
         _play;
       });
-      print('No documents found for the given query.');
+      print('Zmblesh nwe');
     }
     setState(() {});
   }

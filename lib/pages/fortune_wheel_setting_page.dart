@@ -16,10 +16,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 typedef void WheelUpdateCallback(int newLength);
 
 class FortuneWheelSettingPage extends StatefulWidget {
-  const FortuneWheelSettingPage({Key? key, required this.wheel})
+  const FortuneWheelSettingPage(
+      {Key? key, required this.wheel, required this.localPoints})
       : super(key: key);
 
   final Wheel wheel;
+  final int localPoints;
 
   @override
   _FortuneWheelSettingPageState createState() =>
@@ -79,6 +81,7 @@ class _FortuneWheelSettingPageState extends State<FortuneWheelSettingPage> {
         .where('userId', isEqualTo: _userId)
         .get();
     int totalPoints = 0;
+
     pointsSnapshot.docs.forEach((DocumentSnapshot doc) {
       totalPoints += (doc['points'] as int? ??
           0); // Explicitly cast and handle null values
@@ -87,6 +90,7 @@ class _FortuneWheelSettingPageState extends State<FortuneWheelSettingPage> {
       _totalPoints = totalPoints;
       // Set points in TextField
     });
+
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setInt('totalPoints', totalPoints);
   }

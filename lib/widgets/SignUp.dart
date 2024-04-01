@@ -37,12 +37,6 @@ class _SignUpState extends State<SignUp> {
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            Image.asset(
-              'assets/images/prime_logo.png',
-              width: 150,
-              height: 150,
-              fit: BoxFit.contain,
-            ),
             const Text(
               'SignUp',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),

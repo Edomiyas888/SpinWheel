@@ -176,14 +176,15 @@ class _CircleButtonsState extends State<CircleButtons> {
                         }
                       }
 
-                      // If the number of selected items is odd, add a "0" with green color
+                      // If the number of selected items is odd, make the last item green
+                      // If the number of selected items is odd, make the last item green
                       if (selectedCount % 2 == 1) {
-                        selectedItems.add(Fortune(
-                          id: selectedItems.length + 1,
-                          titleName: '0',
+                        // Create a new Fortune object with the updated background color
+                        Fortune lastItem = selectedItems.last.copyWith(
                           backgroundColor: Colors.green,
-                          priority: 10,
-                        ));
+                        );
+                        // Replace the last item in the list with the updated one
+                        selectedItems[selectedItems.length - 1] = lastItem;
                       }
 
                       // Update the wheel with selected items
