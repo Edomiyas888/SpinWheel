@@ -41,7 +41,7 @@ void main() async {
     MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: appTheme,
-      home: MyApp(),
+      home: Login(),
       title: 'Spin to win',
     ),
   );
