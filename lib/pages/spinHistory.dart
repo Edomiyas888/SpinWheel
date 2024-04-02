@@ -21,7 +21,8 @@ class SpinHistoryList extends StatefulWidget {
 }
 
 class _SpinHistoryListState extends State<SpinHistoryList> {
-  DateTime? _selectedDate;
+  DateTime? _startDate;
+  DateTime? _endDate;
   List<DateTime> _dropdownItems = [];
   bool _dropdownEnabled = true;
 
@@ -32,7 +33,6 @@ class _SpinHistoryListState extends State<SpinHistoryList> {
   void initState() {
     super.initState();
     _loadDropdownItems();
-    _fetchStats();
   }
 
   void _loadDropdownItems() {
@@ -42,8 +42,18 @@ class _SpinHistoryListState extends State<SpinHistoryList> {
     }
     if (_dropdownItems.length == 1) {
       _dropdownEnabled = false;
-      _selectedDate = _dropdownItems[0];
+      _startDate = _endDate = _dropdownItems[0];
+    } else {
+      _startDate = _dropdownItems[0];
+      _endDate =
+          endOfDay(currentDate); // Set today's date as the default end date
     }
+    _fetchStats(); // Call fetchStats whenever dropdown values are changed
+  }
+
+  DateTime endOfDay(DateTime dateTime) {
+    return DateTime(
+        dateTime.year, dateTime.month, dateTime.day, 23, 59, 59, 999);
   }
 
   @override
@@ -58,11 +68,17 @@ class _SpinHistoryListState extends State<SpinHistoryList> {
         } else {
           return Column(
             children: [
-              _buildStats(),
-              _buildDateFilterDropdown(),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildDateFilterDropdown(),
+                  _buildStatsCard(),
+                ],
+              ),
+              SizedBox(height: 20),
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
-                  stream: _selectedDate == null
+                  stream: _startDate == null || _endDate == null
                       ? FirebaseFirestore.instance
                           .collection('users')
                           .doc(snapshot.data)
@@ -75,10 +91,10 @@ class _SpinHistoryListState extends State<SpinHistoryList> {
                           .collection('history')
                           .where('timestamp',
                               isGreaterThanOrEqualTo: Timestamp.fromDate(
-                                  DateTime(
-                                      _selectedDate!.year,
-                                      _selectedDate!.month,
-                                      _selectedDate!.day)))
+                                  DateTime(_startDate!.year, _startDate!.month,
+                                      _startDate!.day)),
+                              isLessThanOrEqualTo:
+                                  Timestamp.fromDate(endOfDay(_endDate!)))
                           .orderBy('timestamp', descending: true)
                           .snapshots(),
                   builder: (context, snapshot) {
@@ -86,18 +102,28 @@ class _SpinHistoryListState extends State<SpinHistoryList> {
                       return Center(child: CircularProgressIndicator());
                     } else if (snapshot.hasError) {
                       return Center(child: Text('Error: ${snapshot.error}'));
+                    } else if (snapshot.data!.docs.isEmpty) {
+                      return Center(child: Text('No data available'));
                     } else {
-                      return ListView.builder(
-                        itemCount: snapshot.data!.docs.length,
-                        itemBuilder: (context, index) {
-                          var data = snapshot.data!.docs[index].data()
-                              as Map<String, dynamic>;
-                          return ListTile(
-                            title: Text('Prize Amount: ${data['prizeAmount']}'),
-                            subtitle: Text(
-                                'Time: ${_formatTimestamp(data['timestamp'])}'),
-                          );
-                        },
+                      return SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: DataTable(
+                          columns: [
+                            DataColumn(label: Text('Prize Amount')),
+                            DataColumn(label: Text('Time')),
+                          ],
+                          rows: snapshot.data!.docs.map((document) {
+                            final data =
+                                document.data() as Map<String, dynamic>;
+                            return DataRow(
+                              cells: [
+                                DataCell(Text('${data['prizeAmount']}')),
+                                DataCell(
+                                    Text(_formatTimestamp(data['timestamp']))),
+                              ],
+                            );
+                          }).toList(),
+                        ),
                       );
                     }
                   },
@@ -110,37 +136,88 @@ class _SpinHistoryListState extends State<SpinHistoryList> {
     );
   }
 
-  Widget _buildStats() {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Total Games Played: $_totalGamesPlayed'),
-          Text('Total Revenue: $_totalRevenue'),
-          Divider(),
-        ],
+  Widget _buildStatsCard() {
+    return Card(
+      margin: EdgeInsets.all(10),
+      child: Padding(
+        padding: EdgeInsets.all(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Total Games Played: $_totalGamesPlayed',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            Text(
+              'Total Revenue: $_totalRevenue',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildDateFilterDropdown() {
-    return DropdownButton<DateTime>(
-      hint: Text('Filter by Date'),
-      value: _selectedDate,
-      onChanged: _dropdownEnabled
-          ? (DateTime? newValue) {
-              setState(() {
-                _selectedDate = newValue;
-              });
-            }
-          : null,
-      items: _dropdownItems.map((date) {
-        return DropdownMenuItem<DateTime>(
-          value: date,
-          child: Text(DateFormat('yyyy-MM-dd').format(date)),
-        );
-      }).toList(),
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            DropdownButton<String>(
+              hint: Text('Start Date'),
+              value: _startDate != null
+                  ? DateFormat('yyyy-MM-dd').format(_startDate!)
+                  : null,
+              onChanged: _dropdownEnabled
+                  ? (String? newValue) {
+                      setState(() {
+                        _startDate =
+                            newValue != null ? DateTime.parse(newValue) : null;
+                        if (_endDate != null &&
+                            _startDate!.isAfter(_endDate!)) {
+                          _endDate = _startDate;
+                        }
+                      });
+                      _fetchStats();
+                    }
+                  : null,
+              items: _dropdownItems.map((date) {
+                return DropdownMenuItem<String>(
+                  value: DateFormat('yyyy-MM-dd').format(date),
+                  child: Text(DateFormat('yyyy-MM-dd').format(date)),
+                );
+              }).toList(),
+            ),
+            DropdownButton<String>(
+              hint: Text('End Date'),
+              value: _endDate != null
+                  ? DateFormat('yyyy-MM-dd').format(_endDate!)
+                  : null,
+              onChanged: _dropdownEnabled
+                  ? (String? newValue) {
+                      setState(() {
+                        _endDate =
+                            newValue != null ? DateTime.parse(newValue) : null;
+                        if (_startDate != null &&
+                            _endDate!.isBefore(_startDate!)) {
+                          _startDate = _endDate;
+                        }
+                      });
+                      _fetchStats();
+                    }
+                  : null,
+              items: _dropdownItems.map((date) {
+                return DropdownMenuItem<String>(
+                  value: DateFormat('yyyy-MM-dd').format(date),
+                  child: Text(DateFormat('yyyy-MM-dd').format(date)),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+        SizedBox(height: 20),
+      ],
     );
   }
 
@@ -156,21 +233,32 @@ class _SpinHistoryListState extends State<SpinHistoryList> {
   }
 
   Future<void> _fetchStats() async {
-    final String userId = await _loadUserId();
-    final QuerySnapshot snapshot = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .collection('history')
-        .get();
+    if (_startDate == null || _endDate == null) return;
 
-    double totalRevenue = 0;
-    for (var doc in snapshot.docs) {
-      totalRevenue += (doc['prizeAmount'] as num).toDouble();
+    try {
+      final String userId = await _loadUserId();
+      final QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('history')
+          .where('timestamp',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(DateTime(
+                  _startDate!.year, _startDate!.month, _startDate!.day)),
+              isLessThanOrEqualTo: Timestamp.fromDate(endOfDay(_endDate!)))
+          .get();
+
+      double totalRevenue = 0;
+      for (var doc in snapshot.docs) {
+        totalRevenue += (doc['prizeAmount'] as num).toDouble();
+      }
+
+      setState(() {
+        _totalGamesPlayed = snapshot.docs.length;
+        _totalRevenue = totalRevenue;
+      });
+    } catch (error) {
+      print("Error fetching stats: $error");
+      // Handle error gracefully, such as showing a snackbar or retry option
     }
-
-    setState(() {
-      _totalGamesPlayed = snapshot.docs.length;
-      _totalRevenue = totalRevenue;
-    });
   }
 }

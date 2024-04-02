@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class UserDropdown extends StatefulWidget {
+  final Function(String)? onDetailPressed;
+
+  const UserDropdown({Key? key, this.onDetailPressed}) : super(key: key);
+
   @override
   _UserDropdownState createState() => _UserDropdownState();
 }
@@ -152,6 +156,17 @@ class _UserDropdownState extends State<UserDropdown> {
               }).toList(),
               hint: Text('Select a user'),
             ),
+          ),
+          SizedBox(width: 10),
+          ElevatedButton(
+            onPressed: widget.onDetailPressed != null
+                ? () {
+                    if (_selectedUserId != null) {
+                      widget.onDetailPressed!(_selectedUserId!);
+                    }
+                  }
+                : null,
+            child: Text('Details'),
           ),
           SizedBox(width: 10),
           Expanded(

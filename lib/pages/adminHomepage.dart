@@ -1,8 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_fortune_wheel_example/pages/userDetails.dart';
 import 'package:flutter_fortune_wheel_example/widgets/SignUp.dart';
 import 'package:flutter_fortune_wheel_example/widgets/dropdown.dart';
 import 'package:flutter_fortune_wheel_example/widgets/login.dart';
+import 'package:intl/intl.dart'; // For date formatting
+import 'package:csv/csv.dart';
+import 'dart:io';
+
 import 'package:flutter_fortune_wheel_example/widgets/percentDropdown.dart';
 
 class Dashboard extends StatelessWidget {
@@ -11,16 +16,7 @@ class Dashboard extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('Admin Dashboard'),
-        actions: [
-          // IconButton(
-          //   icon: Icon(Icons.notifications),
-          //   onPressed: () {},
-          // ),
-          // IconButton(
-          //   icon: Icon(Icons.settings),
-          //   onPressed: () {},
-          // ),
-        ],
+        actions: [],
       ),
       body: Padding(
         padding: EdgeInsets.all(16.0),
@@ -73,7 +69,15 @@ class Dashboard extends StatelessWidget {
                 ),
                 Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: UserDropdown(),
+                  child: UserDropdown(
+                    onDetailPressed: (selectedUserId) {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  UserDetailsPage(userId: selectedUserId)));
+                    },
+                  ),
                 ),
                 const Text(
                   'Share Percentage',
@@ -84,20 +88,20 @@ class Dashboard extends StatelessWidget {
                   child: PercentDropdown(),
                 ),
                 ElevatedButton(
-                    onPressed: (() {
-                      Navigator.push(context,
-                          MaterialPageRoute(builder: (context) => SignUp()));
-                    }),
-                    child: Text('Shop Creation')),
-                SizedBox(
-                  height: 20,
+                  onPressed: (() {
+                    Navigator.push(context,
+                        MaterialPageRoute(builder: (context) => SignUp()));
+                  }),
+                  child: Text('Shop Creation'),
                 ),
+                SizedBox(height: 20),
                 ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(context,
-                          MaterialPageRoute(builder: (context) => Login()));
-                    },
-                    child: Text('Log Out'))
+                  onPressed: () {
+                    Navigator.push(context,
+                        MaterialPageRoute(builder: (context) => Login()));
+                  },
+                  child: Text('Log Out'),
+                ),
               ],
             ),
           ],
@@ -137,34 +141,178 @@ class Dashboard extends StatelessWidget {
     );
   }
 
-  Widget _buildPointsList() {
-    return Expanded(
-      child: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('points').snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Text('Error: ${snapshot.error}');
-          }
+  Future<void> _showUserHistory(BuildContext context, String userId) async {
+    // Variables to store selected start and end dates
+    DateTime? startDate;
+    DateTime? endDate;
 
-          switch (snapshot.connectionState) {
-            case ConnectionState.waiting:
-              return CircularProgressIndicator();
-            default:
-              return ListView(
-                children: snapshot.data!.docs.map((DocumentSnapshot document) {
-                  Map<String, dynamic> data =
-                      document.data() as Map<String, dynamic>;
-                  String userId = data['userId'];
-                  int points = data['points'];
-                  return ListTile(
-                    title: Text('User ID: $userId'),
-                    subtitle: Text('Points: $points'),
-                  );
-                }).toList(),
-              );
-          }
-        },
+    // Function to filter history based on selected dates
+    List<Map<String, dynamic>> filterHistory(
+        List<Map<String, dynamic>> userHistory) {
+      if (startDate != null && endDate != null) {
+        return userHistory.where((historyItem) {
+          DateTime timestamp = DateTime.parse(historyItem['timestamp']);
+          return timestamp.isAfter(startDate!) && timestamp.isBefore(endDate!);
+        }).toList();
+      } else {
+        return userHistory;
+      }
+    }
+
+    final userHistorySnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('history')
+        .get();
+
+    // Convert the QuerySnapshot to a list of history items
+    final userHistory =
+        userHistorySnapshot.docs.map((doc) => doc.data()).toList();
+
+    // Show the user history in a dialog
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('User History'),
+        content: StatefulBuilder(
+          builder: (context, setState) {
+            return SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text('Start Date:'),
+                      SizedBox(width: 10),
+                      DropdownButton<DateTime>(
+                        value: startDate,
+                        onChanged: (DateTime? newValue) {
+                          setState(() {
+                            startDate = newValue;
+                          });
+                        },
+                        items: userHistory.map((historyItem) {
+                          DateTime timestamp =
+                              DateTime.parse(historyItem['timestamp']);
+                          return DropdownMenuItem<DateTime>(
+                            value: timestamp,
+                            child: Text(
+                                DateFormat('yyyy-MM-dd').format(timestamp)),
+                          );
+                        }).toList(),
+                      ),
+                      SizedBox(width: 20),
+                      Text('End Date:'),
+                      SizedBox(width: 10),
+                      DropdownButton<DateTime>(
+                        value: endDate,
+                        onChanged: (DateTime? newValue) {
+                          setState(() {
+                            endDate = newValue;
+                          });
+                        },
+                        items: userHistory.map((historyItem) {
+                          DateTime timestamp =
+                              DateTime.parse(historyItem['timestamp']);
+                          return DropdownMenuItem<DateTime>(
+                            value: timestamp,
+                            child: Text(
+                                DateFormat('yyyy-MM-dd').format(timestamp)),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 20),
+                  ...filterHistory(userHistory).map((historyItem) {
+                    // Customize the display of each history item as needed
+                    return ListTile(
+                      title:
+                          Text('Prize Amount: ${historyItem['prizeAmount']}'),
+                      subtitle: Text('Timestamp: ${historyItem['timestamp']}'),
+                    );
+                  }).toList(),
+                ],
+              ),
+            );
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('Close'),
+          ),
+          TextButton(
+            onPressed: () async {
+              // Export filtered history to Excel
+              // await _exportToExcel(filterHistory(userHistory));
+            },
+            child: Text('Export to Excel'),
+          ),
+        ],
       ),
     );
   }
+
+  // Future<void> _exportToExcel(List<Map<String, dynamic>> data) async {
+  //   try {
+  //     // Generate a list of lists representing the CSV data
+  //     List<List<dynamic>> csvData = [
+  //       ['Prize Amount', 'Timestamp']
+  //     ];
+  //     for (var historyItem in data) {
+  //       csvData.add([
+  //         historyItem['prizeAmount'].toString(),
+  //         historyItem['timestamp'].toString(),
+  //       ]);
+  //     }
+
+  //     // Convert CSV data to String
+  //     String csv = const ListToCsvConverter().convert(csvData);
+
+  //     // Get directory where the CSV file will be saved
+  //     final Directory directory = await getExternalStorageDirectory();
+  //     final String path = directory.path;
+
+  //     // Write CSV data to a file
+  //     final File file = File('$path/user_history.csv');
+  //     await file.writeAsString(csv);
+
+  //     // Show a message indicating successful export
+  //     showDialog(
+  //       context: context,
+  //       builder: (context) => AlertDialog(
+  //         title: Text('Export Successful'),
+  //         content: Text('User history has been exported to CSV file.'),
+  //         actions: [
+  //           TextButton(
+  //             onPressed: () {
+  //               Navigator.of(context).pop();
+  //             },
+  //             child: Text('Close'),
+  //           ),
+  //         ],
+  //       ),
+  //     );
+  //   } catch (e) {
+  //     // Show an error message if export fails
+  //     showDialog(
+  //       context: context,
+  //       builder: (context) => AlertDialog(
+  //         title: Text('Export Failed'),
+  //         content: Text('Failed to export user history.'),
+  //         actions: [
+  //           TextButton(
+  //             onPressed: () {
+  //               Navigator.of(context).pop();
+  //             },
+  //             child: Text('Close'),
+  //           ),
+  //         ],
+  //       ),
+  //     );
+  //   }
+  // }
 }

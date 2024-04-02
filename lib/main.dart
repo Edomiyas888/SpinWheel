@@ -734,7 +734,6 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> _onResult(Fortune item) async {
     // Check connectivity
-    var connectivityResult = await Connectivity().checkConnectivity();
 
     // Your existing logic for processing the spin result
     print("Local Points:$_localPoints");
