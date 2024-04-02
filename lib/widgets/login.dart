@@ -14,6 +14,7 @@ class Login extends StatefulWidget {
 }
 
 class _LoginState extends State<Login> {
+  bool _isPasswordVisible = false;
   @override
   void initState() {
     // TODO: implement initState
@@ -61,7 +62,21 @@ class _LoginState extends State<Login> {
                   TextField(
                     controller: _passwordController,
                     maxLines: 1,
-                    decoration: InputDecoration(hintText: 'Password'),
+                    decoration: InputDecoration(
+                      hintText: 'Password',
+                      suffixIcon: IconButton(
+                        icon: Icon(_isPasswordVisible
+                            ? Icons.visibility
+                            : Icons.visibility_off),
+                        onPressed: () {
+                          setState(() {
+                            _isPasswordVisible = !_isPasswordVisible;
+                          });
+                        },
+                      ),
+                    ),
+                    obscureText:
+                        !_isPasswordVisible, // Hide password text if not visible
                   ),
                   SizedBox(
                     height: 18,
